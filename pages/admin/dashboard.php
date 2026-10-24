@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+require_once dirname(__DIR__, 2) . '/backend/config/session.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php');

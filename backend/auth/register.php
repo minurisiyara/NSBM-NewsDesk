@@ -2,13 +2,26 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once dirname(__DIR__) . '/config/session.php';
 
 require_once dirname(__DIR__) . '/config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ../../pages/auth/register.php');
     exit;
+}
+
+$submittedToken = $_POST['csrf_token'] ?? '';
+$sessionToken = $_SESSION['csrf_token'] ?? '';
+
+if (
+    !is_string($submittedToken) ||
+    !is_string($sessionToken) ||
+    $sessionToken === '' ||
+    !hash_equals($sessionToken, $submittedToken)
+) {
+    http_response_code(403);
+    exit('Invalid or expired form token. Please return to the registration page and try again.');
 }
 
 $name = trim($_POST['name'] ?? '');
@@ -18,16 +31,19 @@ $confirmPassword = $_POST['confirm_password'] ?? '';
 
 $errors = [];
 
-if ($name === '') {
-    $errors[] = 'Name is required.';
+if ($name === '' || strlen($name) > 100) {
+    $errors[] = 'Name is required and must be at most 100 bytes.';
 }
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+if (
+    strlen($email) > 254 ||
+    !filter_var($email, FILTER_VALIDATE_EMAIL)
+) {
     $errors[] = 'Enter a valid email address.';
 }
 
-if (strlen($password) < 8) {
-    $errors[] = 'Password must contain at least 8 characters.';
+if (strlen($password) < 8 || strlen($password) > 72) {
+    $errors[] = 'Password must be between 8 and 72 bytes.';
 }
 
 if ($password !== $confirmPassword) {

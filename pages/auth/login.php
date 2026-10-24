@@ -1,5 +1,8 @@
 <?php
-session_start();
+require_once dirname(__DIR__, 2) . '/backend/config/session.php';
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 $errors = $_SESSION['login_errors'] ?? [];
 unset($_SESSION['login_errors']);
@@ -38,6 +41,11 @@ unset($_SESSION['register_success']);
         <?php endif; ?>
 
         <form action="../../backend/auth/login.php" method="POST">
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>"
+            >
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input

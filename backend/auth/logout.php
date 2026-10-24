@@ -2,12 +2,32 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once dirname(__DIR__) . '/config/session.php';
 
-// Remove all session data.
+// Only accept POST requests.
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method not allowed.');
+}
+
+// Verify the CSRF token.
+$submittedToken = $_POST['csrf_token'] ?? '';
+$sessionToken = $_SESSION['csrf_token'] ?? '';
+
+if (
+    !is_string($submittedToken) ||
+    !is_string($sessionToken) ||
+    $sessionToken === '' ||
+    !hash_equals($sessionToken, $submittedToken)
+) {
+    http_response_code(403);
+    exit('Invalid or expired request token.');
+}
+
+// Clear session data.
 $_SESSION = [];
 
-// Clear the session cookie in the browser.
+// Expire the session cookie.
 if (ini_get('session.use_cookies')) {
     $cookieParams = session_get_cookie_params();
 
@@ -25,6 +45,5 @@ if (ini_get('session.use_cookies')) {
 // Destroy the server-side session.
 session_destroy();
 
-// Redirect to the login page.
 header('Location: ../../pages/auth/login.php');
 exit;
