@@ -594,3 +594,52 @@ footer a:hover {
         gap: 22px;
     }
 }
+
+
+/* Article bookmark and comments placeholders */
+.article-bookmark,
+.article-comments {
+    margin-top: 24px;
+    padding: 20px;
+    background: #f7f9f7;
+    border: 1px solid #dce5dc;
+    border-radius: 10px;
+}
+
+.article-bookmark button,
+.article-comments button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #1f5b3a;
+    color: white;
+    font-size: 14px;
+}
+
+.article-bookmark button:disabled,
+.article-comments button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.article-bookmark p,
+.article-comments p {
+    color: #5f6b62;
+    font-size: 14px;
+}
+
+.article-comments label {
+    display: block;
+    margin: 12px 0 8px;
+    font-weight: 600;
+}
+
+.article-comments textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid #cbd5cb;
+    border-radius: 6px;
+    font: inherit;
+}

@@ -361,6 +361,33 @@ if ($article !== null) {
                 <?php endforeach; ?>
             </div>
 
+            <!-- Bookmark placeholder: database integration is pending -->
+            <section class="article-bookmark" aria-label="Bookmark article">
+                <button type="button" disabled>
+                    ☆ Bookmark Article
+                </button>
+                <p>Bookmark functionality will be available after backend integration.</p>
+            </section>
+
+            <!-- Comments placeholder: database integration is pending -->
+            <section class="article-comments" aria-labelledby="comments-heading">
+                <h2 id="comments-heading">Comments</h2>
+                <p>Comments will be available after backend integration.</p>
+
+                <form>
+                    <label for="comment-text">Write a comment</label>
+                    <textarea
+                        id="comment-text"
+                        name="comment"
+                        rows="4"
+                        placeholder="Comments are not available yet."
+                        disabled
+                    ></textarea>
+
+                    <button type="button" disabled>Submit Comment</button>
+                </form>
+            </section>
+
         </article>
 
         <!-- Related stories from the demo collection -->
