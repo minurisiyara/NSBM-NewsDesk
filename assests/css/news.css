@@ -51,11 +51,10 @@ body {
 }
 
 .logo img {
-    width: 65px;
-    height: 55px;
+    width: 100px;
+    height: 90px;
     object-fit: contain;
 }
-
 
 .nav-links {
     display: flex;
