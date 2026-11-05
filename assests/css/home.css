@@ -1390,3 +1390,47 @@ input:focus-visible {
         gap: 6px;
     }
 }
+
+
+/* ================================
+   NSBM NEWSDESK - GREEN FOOTER
+================================ */
+
+.site-footer {
+    background: #06452F;
+    color: #FFFFFF;
+    border-top: 4px solid #35B69A;
+}
+
+/* Footer headings */
+.footer-links h3 {
+    color: #65D2B6;
+}
+
+/* Footer paragraphs */
+.footer-brand p,
+.footer-tagline {
+    color: #D9F0E8;
+}
+
+/* Footer links */
+.footer-links a {
+    color: #FFFFFF;
+    transition: color 0.3s ease;
+}
+
+/* Hover effect */
+.footer-links a:hover {
+    color: #65D2B6;
+}
+
+/* Footer bottom section */
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    color: #D9F0E8;
+}
+
+/* Footer logo background */
+.footer-logo {
+    background: transparent;
+}
