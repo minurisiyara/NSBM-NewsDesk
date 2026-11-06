@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             slideInterval = setInterval(function () {
                 nextSlide();
-            }, 5000);
+            }, 7000);
         }
 
         if (previousButton) {
