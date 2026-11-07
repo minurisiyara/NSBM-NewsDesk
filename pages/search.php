@@ -1,4 +1,3 @@
-
 <?php
 // Temporary demo news data.
 // This will be connected to the database later.
