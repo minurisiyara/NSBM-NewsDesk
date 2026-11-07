@@ -1,63 +1,51 @@
-
 <?php
-// Temporary sample news data
-// Later, this will be connected to the database.
+// Temporary sample article data for frontend development.
+// Later, this data can be loaded from the database.
 
-$newsArticles = [
-    [
-        "id" => 1,
-        "title" => "NSBM Students Celebrate Annual Sports Meet",
-        "category" => "Sports",
-        "description" => "Students participated in various sporting events during the annual university sports meet.",
-        "author" => "NewsDesk Team",
-        "date" => "2026-10-15",
-        "content" => "The annual sports meet brought together students from different faculties to participate in various sporting events. The event encouraged teamwork, sportsmanship and unity among the university community."
-    ],
-    [
-        "id" => 2,
-        "title" => "New Technology Workshop at NSBM",
-        "category" => "Academic",
-        "description" => "A technology workshop was organized to introduce students to modern technology trends.",
-        "author" => "NewsDesk Team",
-        "date" => "2026-10-12",
-        "content" => "The technology workshop introduced students to modern technology trends and provided an opportunity to learn about new developments in the IT industry."
-    ],
-    [
-        "id" => 3,
-        "title" => "University Cultural Festival Announced",
-        "category" => "Events",
-        "description" => "NSBM announced its upcoming cultural festival with activities and performances.",
-        "author" => "NewsDesk Team",
-        "date" => "2026-10-18",
-        "content" => "The university announced its upcoming cultural festival, featuring student performances and activities celebrating creativity and cultural diversity."
+$article = [
+    "id" => 1,
+    "title" => "NSBM Green University Organizes Annual Technology Exhibition",
+    "category" => "Technology",
+    "author" => "NSBM News Desk",
+    "date" => "October 30, 2026",
+    "read_time" => "5 min read",
+    "image" => "../assets/images/technology.jpg",
+    "content" => [
+        "NSBM Green University recently organized its annual technology exhibition, bringing together students, lecturers and technology enthusiasts to showcase innovative projects and creative ideas.",
+        "The exhibition featured a wide range of student projects covering software development, networking, artificial intelligence and emerging technologies. Students had the opportunity to demonstrate their work and explain the ideas behind their projects.",
+        "The event also provided a platform for students to improve their communication skills, exchange knowledge and gain valuable feedback from academic staff and visitors.",
+        "NSBM continues to encourage innovation, creativity and practical learning through events that help students develop the skills needed for the future."
     ]
 ];
 
-// Get the article ID from the URL
-$articleId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+// Get the article ID from the URL.
+$articleId = isset($_GET['id']) ? (int) $_GET['id'] : 1;
 
-// Find the selected article
-$selectedArticle = null;
+// Check whether the requested article exists.
+// This is temporary sample data containing only article ID 1.
+$articleFound = ($articleId === $article['id']);
 
-foreach ($newsArticles as $article) {
-    if ($article['id'] === $articleId) {
-        $selectedArticle = $article;
-        break;
-    }
-}
-
-// Find related articles
-$relatedArticles = [];
-
-if ($selectedArticle !== null) {
-    foreach ($newsArticles as $article) {
-        if ($article['id'] !== $selectedArticle['id']) {
-            $relatedArticles[] = $article;
-        }
-    }
-
-    $relatedArticles = array_slice($relatedArticles, 0, 2);
-}
+// Temporary related articles.
+$relatedArticles = [
+    [
+        "title" => "Students Explore New Technologies",
+        "category" => "Technology",
+        "date" => "October 25, 2026",
+        "link" => "article.php?id=1"
+    ],
+    [
+        "title" => "University News and Events",
+        "category" => "Campus News",
+        "date" => "October 22, 2026",
+        "link" => "article.php?id=1"
+    ],
+    [
+        "title" => "Innovation and Creativity at NSBM",
+        "category" => "Education",
+        "date" => "October 20, 2026",
+        "link" => "article.php?id=1"
+    ]
+];
 ?>
 
 <!DOCTYPE html>
@@ -65,128 +53,228 @@ if ($selectedArticle !== null) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>
-        <?= $selectedArticle
-            ? htmlspecialchars($selectedArticle['title']) . " | NSBM NewsDesk"
-            : "Article Not Found | NSBM NewsDesk" ?>
+        <?php echo $articleFound ? htmlspecialchars($article['title']) : "Article Not Found"; ?>
+        | NSBM NewsDesk
     </title>
 
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="../assets/css/news.css">
+    <!-- Article page stylesheet -->
+    <link rel="stylesheet" href="../assets/css/article.css">
 </head>
 
 <body>
 
+<!-- ================= HEADER / NAVIGATION ================= -->
 <header class="site-header">
     <div class="header-container">
-        <a href="home.php" class="logo">NSBM NewsDesk</a>
+
+        <a href="home.php" class="logo">
+            NSBM <span>NewsDesk</span>
+        </a>
 
         <nav class="main-nav">
             <a href="home.php">Home</a>
             <a href="news.php">News</a>
+            <a href="news.php">Categories</a>
             <a href="search.php">Search</a>
+            <a href="login.php" class="login-link">Login</a>
         </nav>
+
     </div>
 </header>
 
+
+<?php if ($articleFound): ?>
+
+<!-- ================= MAIN ARTICLE ================= -->
 <main class="article-page">
 
-    <?php if ($selectedArticle !== null): ?>
+    <!-- Breadcrumb navigation -->
+    <div class="breadcrumb">
+        <a href="home.php">Home</a>
+        <span>/</span>
+        <a href="news.php">News</a>
+        <span>/</span>
+        <span>Article Details</span>
+    </div>
 
-        <a href="news.php" class="back-link">← Back to News</a>
+    <div class="article-layout">
 
+        <!-- Article content -->
         <article class="article-content">
 
             <span class="article-category">
-                <?= htmlspecialchars($selectedArticle['category']) ?>
+                <?php echo htmlspecialchars($article['category']); ?>
             </span>
 
-            <h1>
-                <?= htmlspecialchars($selectedArticle['title']) ?>
+            <h1 class="article-title">
+                <?php echo htmlspecialchars($article['title']); ?>
             </h1>
 
             <div class="article-meta">
-                <span>By <?= htmlspecialchars($selectedArticle['author']) ?></span>
-
-                <span>
-                    <?= date('d F Y', strtotime($selectedArticle['date'])) ?>
-                </span>
+                <span>By <?php echo htmlspecialchars($article['author']); ?></span>
+                <span>•</span>
+                <span><?php echo htmlspecialchars($article['date']); ?></span>
+                <span>•</span>
+                <span><?php echo htmlspecialchars($article['read_time']); ?></span>
             </div>
 
-            <div class="article-image-placeholder">
-                <span>News Article Image</span>
+            <!-- Main article image -->
+            <img
+                src="<?php echo htmlspecialchars($article['image']); ?>"
+                alt="Technology exhibition at NSBM"
+                class="article-main-image"
+            >
+
+            <!-- Bookmark button -->
+            <div class="article-actions">
+                <button type="button" class="bookmark-btn" id="bookmarkBtn">
+                    ♡ <span>Save Article</span>
+                </button>
             </div>
 
-            <p class="article-description">
-                <?= htmlspecialchars($selectedArticle['description']) ?>
-            </p>
-
+            <!-- Full article paragraphs -->
             <div class="article-body">
-                <p>
-                    <?= htmlspecialchars($selectedArticle['content']) ?>
-                </p>
+
+                <?php foreach ($article['content'] as $paragraph): ?>
+                    <p><?php echo htmlspecialchars($paragraph); ?></p>
+                <?php endforeach; ?>
+
             </div>
 
-            <section class="bookmark-section">
-                <h3>Save This Article</h3>
-                <p>Bookmark functionality will be connected with the backend later.</p>
-                <button type="button" disabled>Bookmark Article</button>
-            </section>
+            <!-- Share section -->
+            <div class="share-section">
+                <h3>Share this article</h3>
 
+                <button type="button" id="shareBtn">
+                    Share Article
+                </button>
+            </div>
+
+            <!-- ================= COMMENTS ================= -->
             <section class="comments-section">
+
                 <h2>Comments</h2>
-                <p>Comments functionality will be available after backend integration.</p>
+
+                <p class="comments-description">
+                    Share your thoughts about this article.
+                </p>
+
+                <!-- Frontend placeholder form.
+                     Comments are not saved to a database yet. -->
+                <form id="commentForm">
+
+                    <label for="commentName">Your Name</label>
+                    <input
+                        type="text"
+                        id="commentName"
+                        placeholder="Enter your name"
+                        required
+                    >
+
+                    <label for="commentText">Your Comment</label>
+                    <textarea
+                        id="commentText"
+                        placeholder="Write your comment..."
+                        rows="4"
+                        required
+                    ></textarea>
+
+                    <button type="submit" class="submit-comment">
+                        Post Comment
+                    </button>
+
+                </form>
+
+                <p id="commentMessage" class="comment-message"></p>
+
+                <div id="commentList"></div>
+
             </section>
 
         </article>
 
-        <section class="related-articles">
-            <h2>Related News</h2>
 
-            <div class="related-news-grid">
+        <!-- ================= RELATED ARTICLES ================= -->
+        <aside class="related-section">
 
-                <?php foreach ($relatedArticles as $related): ?>
+            <h2>Related Articles</h2>
 
-                    <div class="related-news-card">
+            <?php foreach ($relatedArticles as $related): ?>
 
-                        <span>
-                            <?= htmlspecialchars($related['category']) ?>
-                        </span>
+                <div class="related-card">
 
-                        <h3>
-                            <?= htmlspecialchars($related['title']) ?>
-                        </h3>
+                    <span class="related-category">
+                        <?php echo htmlspecialchars($related['category']); ?>
+                    </span>
 
-                        <p>
-                            <?= htmlspecialchars($related['description']) ?>
-                        </p>
+                    <h3>
+                        <?php echo htmlspecialchars($related['title']); ?>
+                    </h3>
 
-                        <a href="article.php?id=<?= $related['id'] ?>">
-                            Read More →
-                        </a>
+                    <p>
+                        <?php echo htmlspecialchars($related['date']); ?>
+                    </p>
 
-                    </div>
+                    <a href="<?php echo htmlspecialchars($related['link']); ?>">
+                        Read More →
+                    </a>
 
-                <?php endforeach; ?>
+                </div>
 
-            </div>
-        </section>
+            <?php endforeach; ?>
 
-    <?php else: ?>
+        </aside>
 
-        <section class="article-not-found">
-            <h1>Article Not Found</h1>
-            <p>Sorry, the news article you are looking for is unavailable.</p>
-            <a href="news.php">Back to News</a>
-        </section>
-
-    <?php endif; ?>
+    </div>
 
 </main>
 
+<?php else: ?>
+
+<!-- ================= ARTICLE NOT FOUND ================= -->
+<main class="not-found">
+
+    <div class="not-found-icon">!</div>
+
+    <h1>Article Not Found</h1>
+
+    <p>
+        Sorry, the article you are looking for is unavailable
+        or may have been removed.
+    </p>
+
+    <a href="news.php" class="back-to-news">
+        Back to News
+    </a>
+
+</main>
+
+<?php endif; ?>
+
+
+<!-- ================= FOOTER ================= -->
 <footer class="site-footer">
-    <p>&copy; 2026 NSBM NewsDesk. All Rights Reserved.</p>
+
+    <div class="footer-content">
+        <h2>NSBM <span>NewsDesk</span></h2>
+
+        <p>
+            Your source for the latest news, events and updates
+            from NSBM Green University.
+        </p>
+
+        <p class="copyright">
+            &copy; 2026 NSBM NewsDesk. All rights reserved.
+        </p>
+    </div>
+
 </footer>
+
+
+<!-- Article page JavaScript -->
+<script src="../assets/js/article.js"></script>
 
 </body>
 </html>
