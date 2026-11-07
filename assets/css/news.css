@@ -1,0 +1,929 @@
+
+/* =========================================
+   NSBM NEWSDESK - NEWS PAGE STYLES
+   Theme: Forest Green, White and Light Grey
+========================================= */
+
+/* General page settings */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f5f7f5;
+    color: #26332c;
+    line-height: 1.6;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* =========================================
+   HEADER AND NAVIGATION
+========================================= */
+
+.site-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5eae6;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-content {
+    min-height: 75px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.logo {
+    color: #174d35;
+    font-size: 25px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.logo span {
+    color: #6b9d45;
+}
+
+.main-nav {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.main-nav a {
+    color: #35443a;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.main-nav a:hover,
+.main-nav a.active {
+    color: #267447;
+}
+
+.main-nav .nav-button {
+    background-color: #1b633e;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 6px;
+}
+
+.main-nav .nav-button:hover {
+    background-color: #12452c;
+    color: white;
+}
+
+/* =========================================
+   NEWS PAGE HEADING
+========================================= */
+
+.news-page {
+    padding: 55px 0 75px;
+    min-height: 75vh;
+}
+
+.page-heading {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.section-label {
+    color: #60934e;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.page-heading h1 {
+    color: #174d35;
+    font-size: 38px;
+    margin-bottom: 10px;
+}
+
+.page-heading > p:last-child {
+    color: #6c786f;
+    font-size: 15px;
+}
+
+/* =========================================
+   SEARCH AND FILTER SECTION
+========================================= */
+
+.news-filters {
+    background-color: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: end;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 45px;
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 160px;
+}
+
+.filter-group label {
+    display: block;
+    color: #34483b;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.filter-group input,
+.filter-group select {
+    width: 100%;
+    height: 43px;
+    padding: 0 12px;
+    border: 1px solid #dce4de;
+    border-radius: 6px;
+    outline: none;
+    font-size: 13px;
+    background-color: white;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    border-color: #267447;
+    box-shadow: 0 0 0 3px rgba(38, 116, 71, 0.1);
+}
+
+.filter-button,
+.reset-button {
+    height: 43px;
+    padding: 0 20px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.filter-button {
+    background-color: #1b633e;
+    color: white;
+    border: none;
+}
+
+.filter-button:hover {
+    background-color: #12452c;
+}
+
+.reset-button {
+    background-color: #edf2ee;
+    color: #315b40;
+}
+
+/* =========================================
+   NEWS RESULTS HEADING
+========================================= */
+
+.results-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+}
+
+.results-heading h2 {
+    color: #174d35;
+    font-size: 23px;
+}
+
+.results-heading span {
+    color: #718075;
+    font-size: 13px;
+}
+
+/* =========================================
+   NEWS CARDS
+========================================= */
+
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 25px;
+}
+
+.news-card {
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.news-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+
+/* =========================================
+   PROFESSIONAL NEWS IMAGE PLACEHOLDERS
+========================================= */
+
+.news-image-placeholder {
+    width: 100%;
+    height: 220px;
+    background: linear-gradient(135deg, #dcebe0, #a9c9b3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Small decorative circle */
+.news-image-placeholder::before {
+    content: "";
+    width: 150px;
+    height: 150px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    position: absolute;
+}
+
+/* Website name */
+.placeholder-label {
+    color: #477454;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    z-index: 1;
+}
+
+/* News category */
+.news-image-placeholder h3 {
+    color: #174d35;
+    font-size: 28px;
+    margin: 12px 0;
+    z-index: 1;
+}
+
+/* Placeholder description */
+.placeholder-caption {
+    color: #526e59;
+    font-size: 12px;
+    z-index: 1;
+}
+
+
+.news-card-content {
+    padding: 22px;
+}
+
+.news-category {
+    display: inline-block;
+    background-color: #e7f2e9;
+    color: #267447;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 5px 12px;
+    border-radius: 20px;
+    margin-bottom: 13px;
+}
+
+.news-card h3 {
+    color: #263d30;
+    font-size: 18px;
+    line-height: 1.4;
+    margin-bottom: 12px;
+}
+
+.news-description {
+    color: #758078;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 18px;
+}
+
+.news-meta {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: #89938c;
+    font-size: 11px;
+    border-top: 1px solid #edf0ed;
+    padding-top: 13px;
+}
+
+.read-more {
+    display: inline-block;
+    margin-top: 17px;
+    color: #1b633e;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.read-more:hover {
+    color: #6b9d45;
+}
+
+/* =========================================
+   FOOTER
+========================================= */
+
+.site-footer {
+    background-color: #153f2d;
+    color: #dce9df;
+    padding: 25px 0;
+    text-align: center;
+    font-size: 13px;
+}
+
+/* =========================================
+   TABLET RESPONSIVE DESIGN
+========================================= */
+
+@media (max-width: 900px) {
+    .news-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .main-nav {
+        gap: 15px;
+    }
+}
+
+/* =========================================
+   MOBILE RESPONSIVE DESIGN
+========================================= */
+
+@media (max-width: 600px) {
+    .header-content {
+        flex-direction: column;
+        padding: 15px 0;
+    }
+
+    .main-nav {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px 18px;
+    }
+
+    .main-nav a {
+        font-size: 12px;
+    }
+
+    .page-heading h1 {
+        font-size: 28px;
+    }
+
+    .news-page {
+        padding: 35px 0 50px;
+    }
+
+    .news-filters {
+        padding: 18px;
+    }
+
+    .filter-group {
+        flex-basis: 100%;
+    }
+
+    .filter-button,
+    .reset-button {
+        flex: 1;
+    }
+
+    .news-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .news-image {
+        height: 220px;
+    }
+
+    .results-heading h2 {
+        font-size: 20px;
+    }
+}
+
+/* =========================================
+   NO SEARCH RESULTS
+========================================= */
+
+
+/* ========================================
+   ARTICLE DETAILS PAGE
+======================================== */
+
+.article-page {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 25px;
+    color: #245c45;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.article-content {
+    max-width: 850px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 35px;
+    border-radius: 12px;
+}
+
+.article-category {
+    display: inline-block;
+    background: #e5f0e9;
+    color: #245c45;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.article-content h1 {
+    color: #183d30;
+    font-size: 34px;
+    line-height: 1.3;
+    margin: 20px 0;
+}
+
+.article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    color: #777777;
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+.article-image-placeholder {
+    min-height: 320px;
+    background: #e8eee9;
+    color: #567363;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+
+.article-description {
+    font-size: 18px;
+    font-weight: 600;
+    color: #35483e;
+    line-height: 1.7;
+}
+
+.article-body {
+    color: #555555;
+    font-size: 16px;
+    line-height: 1.9;
+    margin-top: 20px;
+}
+
+.bookmark-section,
+.comments-section {
+    margin-top: 35px;
+    padding: 25px;
+    background: #f5f7f5;
+    border-radius: 10px;
+}
+
+.bookmark-section h3,
+.comments-section h2 {
+    color: #245c45;
+    margin-top: 0;
+}
+
+.bookmark-section button {
+    padding: 10px 18px;
+    background: #245c45;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.related-articles {
+    margin-top: 50px;
+}
+
+.related-articles h2 {
+    color: #183d30;
+    margin-bottom: 20px;
+}
+
+.related-news-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.related-news-card {
+    background: #ffffff;
+    border: 1px solid #e5e9e6;
+    padding: 22px;
+    border-radius: 10px;
+}
+
+.related-news-card span {
+    color: #245c45;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.related-news-card h3 {
+    color: #183d30;
+    margin: 12px 0;
+}
+
+.related-news-card p {
+    color: #666666;
+    line-height: 1.6;
+}
+
+.related-news-card a {
+    display: inline-block;
+    margin-top: 10px;
+    color: #245c45;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.article-not-found {
+    text-align: center;
+    background: #ffffff;
+    padding: 60px 20px;
+    border-radius: 12px;
+}
+
+.article-not-found h1 {
+    color: #245c45;
+}
+
+.article-not-found p {
+    color: #666666;
+    margin: 15px 0 25px;
+}
+
+.article-not-found a {
+    display: inline-block;
+    background: #245c45;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+}
+
+/* Responsive article page */
+
+@media (max-width: 768px) {
+    .article-content {
+        padding: 22px;
+    }
+
+    .article-content h1 {
+        font-size: 27px;
+    }
+
+    .article-image-placeholder {
+        min-height: 220px;
+    }
+
+    .related-news-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .article-page {
+        margin: 25px auto;
+        padding: 0 12px;
+    }
+
+    .article-content {
+        padding: 18px;
+    }
+
+    .article-content h1 {
+        font-size: 23px;
+    }
+
+    .article-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+
+/* ========================================
+   SEARCH RESULTS PAGE
+======================================== */
+
+.search-page {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+/* Search page heading */
+.search-heading {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.search-heading h1 {
+    color: #183d30;
+    font-size: 34px;
+    margin-bottom: 10px;
+}
+
+.search-heading p {
+    color: #666666;
+    font-size: 16px;
+}
+
+/* Search filter section */
+.search-filter-section {
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 35px;
+    border: 1px solid #e5e9e6;
+}
+
+.search-filter-form {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 18px;
+    align-items: end;
+}
+
+.search-filter-form .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.search-filter-form .filter-group label {
+    color: #35483e;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.search-filter-form input,
+.search-filter-form select {
+    width: 100%;
+    min-height: 43px;
+    padding: 10px;
+    border: 1px solid #d5ddd7;
+    border-radius: 6px;
+    background: #ffffff;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.search-filter-form input:focus,
+.search-filter-form select:focus {
+    outline: 2px solid #8eae9b;
+    border-color: #245c45;
+}
+
+/* Search buttons */
+.search-filter-form .filter-buttons {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 12px;
+}
+
+.search-button,
+.clear-button {
+    display: inline-block;
+    padding: 11px 20px;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.search-button {
+    background: #245c45;
+    color: #ffffff;
+}
+
+.search-button:hover {
+    background: #183d30;
+}
+
+.clear-button {
+    background: #e9eee9;
+    color: #245c45;
+}
+
+.clear-button:hover {
+    background: #dce7df;
+}
+
+/* Search results heading */
+.results-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 22px;
+}
+
+.results-heading h2 {
+    color: #183d30;
+    font-size: 24px;
+    margin: 0;
+}
+
+.results-heading p {
+    color: #666666;
+    font-size: 14px;
+}
+
+/* Search result cards */
+.search-results-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+}
+
+.search-result-card {
+    background: #ffffff;
+    border: 1px solid #e5e9e6;
+    border-radius: 10px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+}
+
+.result-category {
+    align-self: flex-start;
+    background: #e5f0e9;
+    color: #245c45;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.search-result-card h3 {
+    color: #183d30;
+    font-size: 19px;
+    line-height: 1.4;
+    margin: 15px 0 10px;
+}
+
+.result-description {
+    color: #666666;
+    font-size: 14px;
+    line-height: 1.7;
+    flex-grow: 1;
+}
+
+.result-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    color: #888888;
+    font-size: 12px;
+    margin: 15px 0;
+}
+
+.search-result-card .read-more {
+    color: #245c45;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.search-result-card .read-more:hover {
+    text-decoration: underline;
+}
+
+/* No search results */
+.search-no-results {
+    text-align: center;
+    background: #ffffff;
+    padding: 55px 20px;
+    border: 1px solid #e5e9e6;
+    border-radius: 12px;
+}
+
+.search-no-results h3 {
+    color: #245c45;
+    font-size: 23px;
+}
+
+.search-no-results p {
+    color: #666666;
+    line-height: 1.7;
+    margin: 12px 0 22px;
+}
+
+/* Responsive search page */
+@media (max-width: 900px) {
+    .search-filter-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .search-results-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .search-page {
+        margin: 25px auto;
+        padding: 0 12px;
+    }
+
+    .search-heading h1 {
+        font-size: 27px;
+    }
+
+    .search-filter-form {
+        grid-template-columns: 1fr;
+    }
+
+    .search-filter-form .filter-buttons {
+        flex-direction: column;
+    }
+
+    .search-button,
+    .clear-button {
+        text-align: center;
+    }
+
+    .search-results-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .results-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+
+/* =========================================
+   NO NEWS RESULTS
+========================================= */
+
+.no-results {
+    grid-column: 1 / -1;
+    background-color: #ffffff;
+    padding: 55px 20px;
+    text-align: center;
+    border-radius: 10px;
+    border: 1px solid #e5eae6;
+}
+
+.no-results h3 {
+    color: #174d35;
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+.no-results p {
+    color: #758078;
+    font-size: 14px;
+    margin-bottom: 22px;
+}

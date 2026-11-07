@@ -1,426 +1,379 @@
 
 <?php
-// --------------------------------------------------
-// NSBM NewsDesk - News Browsing Page
-// Demo content only. No database connection is used.
-// --------------------------------------------------
+// ==========================================
+// TEMPORARY SAMPLE NEWS DATA
+// Later, this will be replaced with published
+// news articles retrieved from the database.
+// ==========================================
 
-// Sample news articles for frontend development.
 $newsArticles = [
     [
         "id" => 1,
-        "title" => "NSBM Students Participate in Technology Exhibition",
-        "category" => "Academic",
-        "date" => "2026-10-20",
-        "image" => "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800",
-        "description" => "Students explore technology, innovation, and new learning opportunities."
+        "title" => "NSBM Students Celebrate Annual Sports Meet",
+        "category" => "Sports",
+        "description" => "Students participated in various sporting events during the annual university sports meet.",
+        "author" => "NewsDesk Team",
+        "date" => "2026-10-15"
     ],
     [
         "id" => 2,
-        "title" => "University Sports Meet Celebrates Student Talent",
-        "category" => "Sports",
-        "date" => "2026-10-18",
-        "image" => "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800",
-        "description" => "Students come together to celebrate teamwork and sporting achievements."
+        "title" => "New Technology Workshop at NSBM",
+        "category" => "Academic",
+        "description" => "An informative workshop introduced students to modern technology and innovation.",
+        "author" => "NewsDesk Team",
+        "date" => "2026-10-12"
     ],
     [
         "id" => 3,
-        "title" => "Campus Career Guidance Session Announced",
+        "title" => "University Cultural Festival Announced",
         "category" => "Events",
-        "date" => "2026-10-15",
-        "image" => "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800",
-        "description" => "A sample announcement about career guidance and professional development."
-    ],
-    [
-        "id" => 4,
-        "title" => "Computing Students Showcase Their Projects",
-        "category" => "Technology",
-        "date" => "2026-10-12",
-        "image" => "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800",
-        "description" => "Explore examples of teamwork, programming, and computing projects."
-    ],
-    [
-        "id" => 5,
-        "title" => "Student Community Takes Part in Campus Activities",
-        "category" => "Events",
-        "date" => "2026-10-10",
-        "image" => "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800",
-        "description" => "A sample story highlighting student participation and campus life."
-    ],
-    [
-        "id" => 6,
-        "title" => "New Learning Opportunities for University Students",
-        "category" => "Academic",
-        "date" => "2026-10-08",
-        "image" => "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800",
-        "description" => "A demonstration story about learning, education, and student development."
+        "description" => "The university is preparing for an exciting cultural festival with student performances.",
+        "author" => "NewsDesk Team",
+        "date" => "2026-10-18"
     ]
 ];
 
-// Read the filters submitted through the URL.
-$searchTerm = trim($_GET["q"] ?? "");
-$selectedCategory = trim($_GET["category"] ?? "");
-$selectedDate = trim($_GET["date"] ?? "");
+// ==========================================
+// GET SEARCH AND FILTER VALUES
+// ==========================================
 
-// Keep only articles that match the selected filters.
+$searchTerm = trim($_GET['search'] ?? '');
+$selectedCategory = trim($_GET['category'] ?? '');
+$selectedDate = trim($_GET['date'] ?? '');
+
+// Available categories
+$categories = ['Academic', 'Events', 'Sports', 'General'];
+
+// Validate the selected date
+$validDate = false;
+
+if ($selectedDate !== '') {
+    $dateObject = DateTime::createFromFormat('Y-m-d', $selectedDate);
+
+    $validDate = $dateObject &&
+                 $dateObject->format('Y-m-d') === $selectedDate;
+}
+
+// ==========================================
+// FILTER NEWS ARTICLES
+// ==========================================
+
 $filteredArticles = array_filter(
     $newsArticles,
-    function ($article) use ($searchTerm, $selectedCategory, $selectedDate) {
-        $matchesSearch = $searchTerm === ""
-            || stripos($article["title"], $searchTerm) !== false
-            || stripos($article["description"], $searchTerm) !== false;
+    function ($article) use (
+        $searchTerm,
+        $selectedCategory,
+        $selectedDate,
+        $validDate
+    ) {
 
-        $matchesCategory = $selectedCategory === ""
-            || $article["category"] === $selectedCategory;
+        // Search in title, description and author
+        $matchesSearch = (
+            $searchTerm === '' ||
+            stripos($article['title'], $searchTerm) !== false ||
+            stripos($article['description'], $searchTerm) !== false ||
+            stripos($article['author'], $searchTerm) !== false
+        );
 
-        $matchesDate = $selectedDate === ""
-            || $article["date"] === $selectedDate;
+        // Match selected category
+        $matchesCategory = (
+            $selectedCategory === '' ||
+            $article['category'] === $selectedCategory
+        );
 
-        return $matchesSearch && $matchesCategory && $matchesDate;
+        // Match selected publication date
+        $matchesDate = (
+            $selectedDate === '' ||
+            ($validDate && $article['date'] === $selectedDate)
+        );
+
+        // All selected filters must match
+        return $matchesSearch &&
+               $matchesCategory &&
+               $matchesDate;
     }
 );
 
-// Escape text before displaying it in HTML.
-function newsEscape($value) {
-    return htmlspecialchars((string)$value, ENT_QUOTES, "UTF-8");
-}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Latest News | NSBM NewsDesk</title>
 
-    <!-- Reuse the project's existing stylesheet. -->
+    <!-- Main website stylesheet -->
     <link rel="stylesheet" href="../assets/css/style.css">
 
-    <style>
-        /* News page-specific styles */
-        .news-page {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 35px 20px 60px;
-        }
-
-        .news-page-heading {
-            margin-bottom: 25px;
-        }
-
-        .news-page-heading h1 {
-            margin-bottom: 8px;
-            color: #185c42;
-        }
-
-        .demo-notice {
-            padding: 12px 16px;
-            margin-bottom: 24px;
-            border-left: 4px solid #b88724;
-            background: #fff8e8;
-            color: #5c481b;
-            border-radius: 4px;
-        }
-
-        .news-filters {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr auto;
-            gap: 12px;
-            margin-bottom: 30px;
-            padding: 18px;
-            background: #f5f7f5;
-            border-radius: 10px;
-        }
-
-        .news-filters input,
-        .news-filters select {
-            width: 100%;
-            min-width: 0;
-            padding: 11px;
-            border: 1px solid #d5ddd7;
-            border-radius: 6px;
-            background: white;
-            font: inherit;
-        }
-
-        .news-filter-button {
-            padding: 11px 20px;
-            border: none;
-            border-radius: 6px;
-            background: #185c42;
-            color: white;
-            cursor: pointer;
-            font: inherit;
-        }
-
-        .news-filter-button:hover {
-            background: #10452f;
-        }
-
-        .clear-filters {
-            display: inline-block;
-            margin-top: 12px;
-            color: #185c42;
-        }
-
-        .news-results-heading {
-            margin-bottom: 20px;
-        }
-
-        .news-results-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 24px;
-        }
-
-        .news-result-card {
-            overflow: hidden;
-            border: 1px solid #e3e8e4;
-            border-radius: 10px;
-            background: white;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .news-result-card img {
-            display: block;
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .news-result-content {
-            padding: 18px;
-        }
-
-        .news-category {
-            display: inline-block;
-            margin-bottom: 10px;
-            color: #185c42;
-            font-size: 0.85rem;
-            font-weight: bold;
-        }
-
-        .news-result-content h2 {
-            margin: 0 0 10px;
-            font-size: 1.15rem;
-            line-height: 1.5;
-        }
-
-        .news-result-content p {
-            line-height: 1.6;
-        }
-
-        .news-date {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .read-news-link {
-            display: inline-block;
-            margin-top: 8px;
-            color: #185c42;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .read-news-link:hover {
-            text-decoration: underline;
-        }
-
-        .no-news-results {
-            padding: 35px 20px;
-            text-align: center;
-            background: #f5f7f5;
-            border-radius: 10px;
-        }
-
-        @media (max-width: 850px) {
-            .news-filters {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .news-results-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-
-        @media (max-width: 550px) {
-            .news-filters,
-            .news-results-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .news-page {
-                padding: 25px 15px 40px;
-            }
-        }
-    </style>
+    <!-- News page stylesheet -->
+    <link rel="stylesheet" href="../assets/css/news.css">
 </head>
 
 <body>
 
-<!-- Public website header -->
-<header class="site-header">
-    <div class="header-container">
+    <!-- ======================================
+         WEBSITE HEADER
+    ======================================= -->
 
-        <a class="brand" href="home.php">
-            <span>NSBM NewsDesk</span>
-        </a>
+    <header class="site-header">
 
-        <nav class="main-nav" aria-label="Main navigation">
-            <a href="home.php">Home</a>
-            <a class="active" href="news.php">News</a>
-            <a href="news.php?category=Academic">Academic</a>
-            <a href="news.php?category=Sports">Sports</a>
-            <a href="news.php?category=Events">Events</a>
-        </nav>
+        <div class="container header-content">
 
-        <div class="header-actions">
-            <a class="login-link" href="../backend/auth/login.php">Login</a>
-            <a class="signup-link" href="../backend/auth/register.php">Sign Up</a>
+            <a href="home.php" class="logo">
+                NSBM <span>NewsDesk</span>
+            </a>
+
+            <!-- Main Navigation -->
+            <nav class="main-nav">
+
+                <a href="home.php">Home</a>
+
+                <a href="news.php" class="active">News</a>
+
+                <a href="search.php">Search</a>
+
+                <a href="auth/login.php">Login</a>
+
+                <a href="auth/register.php" class="nav-button">
+                    Register
+                </a>
+
+            </nav>
+
         </div>
 
-    </div>
-</header>
+    </header>
 
-<main class="news-page">
 
-    <section class="news-page-heading">
-        <h1>Latest News</h1>
-        <p>Explore news, events, and updates from our university community.</p>
-    </section>
+    <!-- ======================================
+         MAIN NEWS CONTENT
+    ======================================= -->
 
-    <!-- Clearly identify temporary demonstration content. -->
-    <div class="demo-notice">
-        <strong>Development demo:</strong>
-        These are sample articles for testing the page, not verified official NSBM news.
-    </div>
+    <main class="news-page">
 
-    <!-- Search and filter form -->
-    <form class="news-filters" action="news.php" method="get">
+        <section class="container">
 
-        <input
-            type="search"
-            name="q"
-            placeholder="Search news..."
-            aria-label="Search news"
-            value="<?= newsEscape($searchTerm) ?>"
-        >
+            <!-- Page Heading -->
+            <div class="page-heading">
 
-        <select name="category" aria-label="Filter by category">
-            <option value="">All categories</option>
-            <?php foreach (["Academic", "Sports", "Events", "Technology"] as $category): ?>
-                <option
-                    value="<?= newsEscape($category) ?>"
-                    <?= $selectedCategory === $category ? "selected" : "" ?>
-                >
-                    <?= newsEscape($category) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
+                <p class="section-label">
+                    NSBM GREEN UNIVERSITY
+                </p>
 
-        <input
-            type="date"
-            name="date"
-            aria-label="Filter by publication date"
-            value="<?= newsEscape($selectedDate) ?>"
-        >
+                <h1>Latest Campus News</h1>
 
-        <button class="news-filter-button" type="submit">
-            Search
-        </button>
+                <p>
+                    Stay updated with the latest news, events and
+                    announcements from NSBM.
+                </p>
 
-    </form>
+            </div>
 
-    <?php if ($searchTerm !== "" || $selectedCategory !== "" || $selectedDate !== ""): ?>
-        <a class="clear-filters" href="news.php">Clear all filters</a>
-    <?php endif; ?>
 
-    <section aria-labelledby="news-results-title">
+            <!-- ======================================
+                 SEARCH AND FILTER FORM
+            ======================================= -->
 
-        <h2 class="news-results-heading" id="news-results-title">
-            News Articles (<?= count($filteredArticles) ?>)
-        </h2>
+            <form class="news-filters" method="GET" action="news.php">
 
-        <?php if (count($filteredArticles) > 0): ?>
+                <!-- Search Field -->
+                <div class="filter-group">
 
-            <div class="news-results-grid">
+                    <label for="search">Search News</label>
 
-                <?php foreach ($filteredArticles as $article): ?>
+                    <input
+                        type="text"
+                        id="search"
+                        name="search"
+                        placeholder="Search for news..."
+                        value="<?= htmlspecialchars($searchTerm) ?>"
+                    >
 
-                    <article class="news-result-card">
+                </div>
 
-                        <img
-                            src="<?= newsEscape($article["image"]) ?>"
-                            alt="Illustrative image for <?= newsEscape($article["title"]) ?>"
-                            loading="lazy"
-                        >
 
-                        <div class="news-result-content">
+                <!-- Category Filter -->
+                <div class="filter-group">
 
-                            <span class="news-category">
-                                <?= newsEscape($article["category"]) ?>
-                            </span>
+                    <label for="category">Category</label>
 
-                            <h2>
-                                <?= newsEscape($article["title"]) ?>
-                            </h2>
+                    <select id="category" name="category">
 
-                            <p class="news-date">
-                                Published:
-                                <time datetime="<?= newsEscape($article["date"]) ?>">
-                                    <?= date("d M Y", strtotime($article["date"])) ?>
-                                </time>
-                            </p>
+                        <option value="">All Categories</option>
+
+                        <?php foreach ($categories as $category): ?>
+
+                            <option
+                                value="<?= htmlspecialchars($category) ?>"
+                                <?= $selectedCategory === $category ? 'selected' : '' ?>
+                            >
+                                <?= htmlspecialchars($category) ?>
+                            </option>
+
+                        <?php endforeach; ?>
+
+                    </select>
+
+                </div>
+
+
+                <!-- Publication Date Filter -->
+                <div class="filter-group">
+
+                    <label for="date">Published Date</label>
+
+                    <input
+                        type="date"
+                        id="date"
+                        name="date"
+                        value="<?= htmlspecialchars($selectedDate) ?>"
+                    >
+
+                </div>
+
+
+                <!-- Search Button -->
+                <button type="submit" class="filter-button">
+                    Search
+                </button>
+
+
+                <!-- Reset Button -->
+                <a href="news.php" class="reset-button">
+                    Clear Filters
+                </a>
+
+            </form>
+
+
+            <!-- ======================================
+                 NEWS RESULTS
+            ======================================= -->
+
+            <div class="news-results">
+
+                <!-- Results Heading -->
+                <div class="results-heading">
+
+                    <h2>All News</h2>
+
+                    <span>
+                        <?= count($filteredArticles) ?> Articles Found
+                    </span>
+
+                </div>
+
+
+                <!-- News Cards Grid -->
+                <div class="news-grid">
+
+                    <?php if (count($filteredArticles) > 0): ?>
+
+                        <?php foreach ($filteredArticles as $article): ?>
+
+                            <article class="news-card">
+
+                                <!-- News Image Placeholder -->
+                                <div class="news-image-placeholder">
+
+                                    <span class="placeholder-label">
+                                        NSBM NEWSDESK
+                                    </span>
+
+                                    <h3>
+                                        <?= htmlspecialchars($article['category']) ?>
+                                    </h3>
+
+                                    <span class="placeholder-caption">
+                                        Campus News & Updates
+                                    </span>
+
+                                </div>
+
+
+                                <!-- News Card Information -->
+                                <div class="news-card-content">
+
+                                    <!-- News Category -->
+                                    <span class="news-category">
+                                        <?= htmlspecialchars($article['category']) ?>
+                                    </span>
+
+
+                                    <!-- News Title -->
+                                    <h3>
+                                        <?= htmlspecialchars($article['title']) ?>
+                                    </h3>
+
+
+                                    <!-- News Description -->
+                                    <p class="news-description">
+                                        <?= htmlspecialchars($article['description']) ?>
+                                    </p>
+
+
+                                    <!-- Author and Date -->
+                                    <div class="news-meta">
+
+                                        <span>
+                                            <?= htmlspecialchars($article['author']) ?>
+                                        </span>
+
+                                        <span>
+                                            <?= date("d M Y", strtotime($article['date'])) ?>
+                                        </span>
+
+                                    </div>
+
+
+                                    <!-- Read More Link -->
+                                    <a
+                                        href="article.php?id=<?= (int)$article['id'] ?>"
+                                        class="read-more"
+                                    >
+                                        Read More &rarr;
+                                    </a>
+
+                                </div>
+
+                            </article>
+
+                        <?php endforeach; ?>
+
+
+                    <?php else: ?>
+
+                        <!-- Empty State -->
+                        <div class="no-results">
+
+                            <h3>No News Articles Found</h3>
 
                             <p>
-                                <?= newsEscape($article["description"]) ?>
+                                Sorry, no articles match your search
+                                or selected filters.
                             </p>
 
-                            <!-- Article page will be implemented in a later step. -->
-                            <a
-                                class="read-news-link"
-                                href="article.php?id=<?= (int)$article["id"] ?>"
-                            >
-                                Read More →
+                            <a href="news.php" class="filter-button">
+                                View All News
                             </a>
 
                         </div>
-                    </article>
 
-                <?php endforeach; ?>
+                    <?php endif; ?>
+
+                </div>
 
             </div>
 
-        <?php else: ?>
+        </section>
 
-            <div class="no-news-results">
-                <h2>No news found</h2>
-                <p>Try a different keyword, category, or publication date.</p>
-                <a class="read-news-link" href="news.php">View all news</a>
-            </div>
+    </main>
 
-        <?php endif; ?>
 
-    </section>
 
-</main>
-
-<!-- Website footer -->
-<footer class="site-footer" id="footer">
-    <div class="footer-content">
-        <h2>NSBM NewsDesk</h2>
-        <p>Your demonstration university news portal.</p>
-        <p>
-            <a href="home.php">Home</a> |
-            <a href="news.php">Latest News</a> |
-            <a href="https://www.nsbm.ac.lk/">NSBM Official Website</a>
-        </p>
-        <p>&copy; <?= date("Y") ?> NSBM NewsDesk — Student project demo.</p>
-    </div>
-</footer>
 
 </body>
 </html>
