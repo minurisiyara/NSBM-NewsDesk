@@ -62,7 +62,7 @@ $announcements = [
 <header class="navbar">
 
     <a href="home.php" class="logo">
-    <img src="../assests/images/nsbm-logo.png" alt="NSBM Green University Logo">
+    <img src="../assets/images/nsbm-logo.png" alt="NSBM Green University Logo">
     <span>NewsDesk</span>
     </a>
 

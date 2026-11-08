@@ -9,7 +9,7 @@ $article = [
     "author" => "NSBM News Desk",
     "date" => "October 30, 2026",
     "read_time" => "5 min read",
-    "image" => "../assests/images/technology.jpg",
+    "image" => "../assets/images/technology.jpg",
     "content" => [
         "NSBM Green University recently organized its annual technology exhibition, bringing together students, lecturers and technology enthusiasts to showcase innovative projects and creative ideas.",
         "The exhibition featured a wide range of student projects covering software development, networking, artificial intelligence and emerging technologies. Students had the opportunity to demonstrate their work and explain the ideas behind their projects.",
@@ -60,7 +60,7 @@ $relatedArticles = [
     </title>
 
     <!-- Article page stylesheet -->
-    <link rel="stylesheet" href="../assests/css/article.css">
+    <link rel="stylesheet" href="../assets/css/article.css">
 </head>
 
 <body>
@@ -70,7 +70,7 @@ $relatedArticles = [
     <div class="header-container">
 
         <a href="home.php" class="logo">
-            <img src="../assests/images/nsbm-logo.png" alt="NSBM Green University Logo"><span>NewsDesk</span>
+            <img src="../assets/images/nsbm-logo.png" alt="NSBM Green University Logo"><span>NewsDesk</span>
         </a>
 
         <nav class="main-nav">
@@ -274,7 +274,7 @@ $relatedArticles = [
 
 
 <!-- Article page JavaScript -->
-<script src="../assests/js/article.js"></script>
+<script src="../assets/js/article.js"></script>
 
 </body>
 </html>

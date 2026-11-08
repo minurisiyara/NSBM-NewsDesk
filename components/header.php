@@ -11,7 +11,7 @@
     <title>NSBM NewsDesk</title>
 
     <!-- Shared homepage stylesheet -->
-    <link rel="stylesheet" href="../assests/css/home.css">
+    <link rel="stylesheet" href="../assets/css/home.css">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

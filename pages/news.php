@@ -70,7 +70,7 @@ foreach ($newsArticles as $article) {
 
     <title>News | NSBM NewsDesk</title>
 
-    <link rel="stylesheet" href="../assests/css/news.css">
+    <link rel="stylesheet" href="../assets/css/news.css">
 </head>
 
 <body>
@@ -79,7 +79,7 @@ foreach ($newsArticles as $article) {
 <header class="navbar">
 
     <a href="home.php" class="logo">
-    <img src="../assests/images/nsbm-logo.png" alt="NSBM Green University Logo">
+    <img src="../assets/images/nsbm-logo.png" alt="NSBM Green University Logo">
     <span>NewsDesk</span>
     </a>
 

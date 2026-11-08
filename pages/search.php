@@ -60,7 +60,7 @@ if ($searchTerm !== "") {
     <title>Search Results | NSBM NewsDesk</title>
 
     <!-- Search page CSS -->
-    <link rel="stylesheet" href="../assests/css/search.css">
+    <link rel="stylesheet" href="../assets/css/search.css">
 </head>
 
 <body>
