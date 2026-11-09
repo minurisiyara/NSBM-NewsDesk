@@ -3,6 +3,7 @@
 // Temporary sample news data
 $newsArticles = [
     [
+        "id" => 1,
         "category" => "Academic",
         "title" => "NSBM opens a new chapter in AI research",
         "description" => "A new research initiative brings students and industry experts together to explore artificial intelligence.",
@@ -10,6 +11,7 @@ $newsArticles = [
         "image" => "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800"
     ],
     [
+        "id" => 2,
         "category" => "Sports",
         "title" => "Green University cricketers lift the championship trophy",
         "description" => "Team NSBM celebrates a memorable victory after an outstanding inter-university tournament.",
@@ -17,6 +19,7 @@ $newsArticles = [
         "image" => "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800"
     ],
     [
+        "id" => 3,
         "category" => "Events",
         "title" => "Innovation takes centre stage at Tech Expo 2025",
         "description" => "Students showcase creative ideas and innovative technology projects.",
@@ -24,6 +27,7 @@ $newsArticles = [
         "image" => "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800"
     ],
     [
+        "id" => 4,
         "category" => "Academic",
         "title" => "NSBM celebrates academic excellence",
         "description" => "Students and lecturers celebrate achievements and academic success.",
@@ -31,6 +35,7 @@ $newsArticles = [
         "image" => "https://images.unsplash.com/photo-1562774053-701939374585?w=800"
     ],
     [
+        "id" => 5,
         "category" => "Sports",
         "title" => "Inter-faculty sports meet begins",
         "description" => "Students come together to represent their faculties in a range of sporting events.",
@@ -38,6 +43,7 @@ $newsArticles = [
         "image" => "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800"
     ],
     [
+        "id" => 6,
         "category" => "Events",
         "title" => "New student orientation programme",
         "description" => "New students are welcomed to the NSBM Green University community.",
@@ -175,9 +181,10 @@ foreach ($newsArticles as $article) {
                     <div class="news-card-footer">
     <span><?= htmlspecialchars($article['date']) ?></span>
 
-    <a href="article.php?id=1">
-        Read More →
+    <a href="article.php?id=<?= $article['id'] ?>">
+    Read More →
     </a>
+
     </div>
                 
 
@@ -202,15 +209,16 @@ foreach ($newsArticles as $article) {
 <!-- Footer -->
 <footer class="home-footer">
 
-    <div class="footer-about">
-        <h2>🍃 NSBM NewsDesk</h2>
+    <div class="news-card-footer">
 
-        <p>
-            Your window into life at NSBM Green University.
-            Stories, achievements and moments from our community.
-        </p>
+    <span>
+        <?= htmlspecialchars($article['date']) ?>
+    </span>
 
-        <small>© 2025 NSBM Green University. All rights reserved.</small>
+    <a href="article.php?id=<?= (int) $article['id'] ?>">
+        Read More →
+    </a>
+
     </div>
 
     <div class="quick-links">
