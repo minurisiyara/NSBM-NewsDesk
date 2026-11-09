@@ -146,7 +146,7 @@ $relatedArticles = array_slice($relatedArticles, 0, 3);
     </title>
 
     <!-- Article page stylesheet -->
-    <link rel="stylesheet" href="../assests/css/article.css">
+    <link rel="stylesheet" href="../assets/css/article.css">
 </head>
 
 <body>
@@ -156,7 +156,7 @@ $relatedArticles = array_slice($relatedArticles, 0, 3);
     <div class="header-container">
 
         <a href="home.php" class="logo">
-            <img src="../assests/images/nsbm-logo.png" alt="NSBM Green University Logo"><span>NewsDesk</span>
+            <img src="../assets/images/nsbm-logo.png" alt="NSBM Green University Logo"><span>NewsDesk</span>
         </a>
 
         <nav class="main-nav">
@@ -360,7 +360,7 @@ $relatedArticles = array_slice($relatedArticles, 0, 3);
 
 
 <!-- Article page JavaScript -->
-<script src="../assests/js/article.js"></script>
+<script src="../assets/js/article.js"></script>
 
 </body>
 </html>
