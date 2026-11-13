@@ -1,25 +1,6 @@
-
-<?php
-require_once __DIR__ . '/../../backend/config/session.php';
-
-if (empty($_SESSION['user_id'])) {
-    header('Location: ../auth/login.php');
-    exit;
-}
-
-if (($_SESSION['user_role'] ?? '') !== 'admin') {
-    http_response_code(403);
-    exit('Access denied.');
-}
-
-require_once __DIR__ . '/../../backend/config/database.php';
-
+// Additional dashboard analytics
 $totalUsers = (int) $pdo->query(
     "SELECT COUNT(*) FROM users"
-)->fetchColumn();
-
-$totalNews = (int) $pdo->query(
-    "SELECT COUNT(*) FROM articles"
 )->fetchColumn();
 
 $totalComments = (int) $pdo->query(
@@ -32,200 +13,270 @@ $totalBookmarks = (int) $pdo->query(
 
 $totalReports = (int) $pdo->query(
     "SELECT COUNT(*) FROM content_reports"
-)->fetchColumn();
+)->fetchColumn();<?php
+require_once __DIR__ . '/../../backend/config/session.php';
+require_once __DIR__ . '/../../backend/config/database.php';
 
-$pendingSubmissions = (int) $pdo->query(
-    "SELECT COUNT(*) FROM articles WHERE status = 'pending'"
-)->fetchColumn();
+if (
+    empty($_SESSION['user_id']) ||
+    ($_SESSION['user_role'] ?? '') !== 'admin'
+) {
+    header('Location: ../auth/login.php');
+    exit;
+}
 
-$popularCategories = $pdo->query("
-    SELECT c.name, COUNT(a.id) AS article_count
-    FROM categories c
-    LEFT JOIN articles a ON a.category_id = c.id
-    GROUP BY c.id, c.name
-    ORDER BY article_count DESC
-    LIMIT 5
-")->fetchAll();
+$activePage = 'dashboard';
+$loggedInUserName = $_SESSION['user_name'] ?? 'Admin User';
+$firstLetter = strtoupper(substr($loggedInUserName, 0, 1));
 
-$mostViewedArticles = $pdo->query("
-    SELECT a.title, COUNT(av.id) AS view_count
-    FROM articles a
-    LEFT JOIN article_views av ON av.article_id = a.id
-    GROUP BY a.id, a.title
-    ORDER BY view_count DESC
-    LIMIT 5
-")->fetchAll();
+// Database Dynamic Stats Queries
+try {
+    $totalNews = $pdo->query("SELECT COUNT(*) FROM articles")->fetchColumn() ?: 0;
+    $publishedThisMonth = $pdo->query("SELECT COUNT(*) FROM articles WHERE status = 'published' AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())")->fetchColumn() ?: 0;
+    $activeCategories = $pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn() ?: 0;
+
+    // Fetch 5 Most Recent Articles
+    $recentStmt = $pdo->query("
+        SELECT articles.*, users.name as author_name 
+        FROM articles 
+        LEFT JOIN users ON articles.author_id = users.id 
+        ORDER BY articles.created_at DESC 
+        LIMIT 5
+    ");
+    $recentArticles = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Fetch Categories Summary
+    $catStmt = $pdo->query("
+        SELECT categories.name, COUNT(articles.id) as article_count 
+        FROM categories 
+        LEFT JOIN articles ON categories.id = articles.category_id 
+        GROUP BY categories.id 
+        LIMIT 5
+    ");
+    $categoriesSummary = $catStmt->fetchAll(PDO::FETCH_ASSOC);
+
+} catch (PDOException $e) {
+    $totalNews = 0;
+    $publishedThisMonth = 0;
+    $activeCategories = 0;
+    $recentArticles = [];
+    $categoriesSummary = [];
+}
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | NSBM NewsDesk</title>
-
-    <style>
-        * { box-sizing: border-box; }
-
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f8f5;
-            color: #263b2b;
+    <title>Admin Dashboard - NSBM NewsDesk</title>
+    <link rel="stylesheet" href="../../assets/css/admin.css?v=2.1">
+    
+    <!-- Anti-Flicker Script: Prevents sidebar expanding before collapse on tab switch -->
+    <script>
+        if (localStorage.getItem('sidebar-collapsed') === 'true') {
+            document.documentElement.classList.add('sidebar-collapsed');
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.classList.add('sidebar-collapsed');
+            });
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 20px;
-        }
-
-        h1 { color: #176b3a; }
-
-        .subtitle {
-            color: #718075;
-            margin-bottom: 30px;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-            gap: 18px;
-            margin-bottom: 30px;
-        }
-
-        .card, .chart-box {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
-        }
-
-        .card {
-            border-left: 5px solid #16834a;
-        }
-
-        .card h3 {
-            color: #68796d;
-            font-size: 15px;
-            margin: 0 0 12px;
-        }
-
-        .number {
-            font-size: 32px;
-            font-weight: bold;
-            color: #176b3a;
-        }
-
-        .chart-box h2 {
-            font-size: 20px;
-            color: #176b3a;
-        }
-
-        .chart {
-            display: flex;
-            align-items: flex-end;
-            gap: 25px;
-            height: 250px;
-            padding-top: 20px;
-        }
-
-        .bar-group {
-            flex: 1;
-            text-align: center;
-        }
-
-        .bar {
-            background: #16834a;
-            border-radius: 8px 8px 0 0;
-            min-height: 3px;
-        }
-
-        .bar-label {
-            margin-top: 10px;
-            font-size: 13px;
-            color: #68796d;
-        }
-    </style>
+    </script>
 </head>
-
 <body>
-<main class="container">
 
-    <h1>Admin Dashboard</h1>
-    <p class="subtitle">
-        NSBM NewsDesk - System Overview
-    </p>
+    <?php include '../../components/admin-sidebar.php'; ?>
 
-    <section class="stats">
-        <div class="card">
-            <h3>Total Users</h3>
-            <div class="number"><?= $totalUsers ?></div>
+    <main class="admin-main">
+        <header class="top-bar">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+                <div class="page-title">
+                    <h1>Admin Dashboard</h1>
+                    <p>admin / dashboard.php</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="user-profile">
+                    <div class="avatar"><?= htmlspecialchars($firstLetter) ?></div>
+                    <span><?= htmlspecialchars($loggedInUserName) ?></span>
+                </div>
+
+                <!-- Secure POST Logout Form -->
+                <form action="../../backend/auth/logout.php" method="POST" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                    <button type="submit" class="btn btn-danger btn-sm" style="border-radius: 20px; padding: 6px 14px;">Logout</button>
+                </form>
+            </div>
+        </header>
+
+        <!-- Stats Section -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <h3>Total News Articles</h3>
+                <div class="number"><?= htmlspecialchars($totalNews) ?></div>
+            </div>
+            <div class="stat-card">
+                <h3>Published This Month</h3>
+                <div class="number"><?= htmlspecialchars($publishedThisMonth) ?></div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Categories</h3>
+                <div class="number"><?= htmlspecialchars($activeCategories) ?></div>
+            </div>
+        </section>
+
+        <!-- Analytics Reserved Area for Tharushika -->
+        <section class="data-card">
+            <div class="card-header">
+                <h2>Analytics</h2>
+<div class="analytics-content">
+    <h3>Platform Activity Overview</h3>
+
+    <p>Total Users: <?= (int)($totalUsers ?? 0) ?></p>
+    <p>Total News: <?= (int)($totalNews ?? 0) ?></p>
+    <p>Total Comments: <?= (int)($totalComments ?? 0) ?></p>
+    <p>Total Bookmarks: <?= (int)($totalBookmarks ?? 0) ?></p>
+    <p>Total Reports: <?= (int)($totalReports ?? 0) ?></p> <div id="activityChart" class="activity-chart"></div>
+</div>
+        </section>
+
+        <!-- Dynamic Tables Grid -->
+        <div class="dashboard-grid">
+            <!-- Recent News Table -->
+            <div class="data-card">
+                <div class="card-header">
+                    <h2>Recent News Management</h2>
+                    <a href="news.php" class="btn btn-primary btn-sm">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Status</th>
+                                <th>Created Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!empty($recentArticles)): ?>
+                                <?php foreach ($recentArticles as $article): ?>
+                                    <tr>
+                                        <td><strong><?= htmlspecialchars($article['title']) ?></strong></td>
+                                        <td><?= htmlspecialchars($article['author_name'] ?? 'System Admin') ?></td>
+                                        <td>
+                                            <span class="badge badge-<?= strtolower($article['status']) ?>">
+                                                <?= htmlspecialchars(ucfirst($article['status'])) ?>
+                                            </span>
+                                        </td>
+                                        <td><?= date('d M Y', strtotime($article['created_at'])) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan="4">No recent articles found.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Categories Summary Table -->
+            <div class="data-card">
+                <div class="card-header">
+                    <h2>Categories Summary</h2>
+                    <a href="categories.php" class="btn btn-primary btn-sm">Manage</a>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!empty($categoriesSummary)): ?>
+                                <?php foreach ($categoriesSummary as $cat): ?>
+                                    <tr>
+                                        <td><strong><?= htmlspecialchars($cat['name']) ?></strong></td>
+                                        <td><?= htmlspecialchars($cat['article_count']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan="2">No categories available.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+    </main>
 
-        <div class="card">
-            <h3>Total News</h3>
-            <div class="number"><?= $totalNews ?></div>
-        </div>
+    <script src="../../assets/js/admin.js"></script>
+    <style>
+.activity-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 15px;
+    height: 230px;
+    padding: 20px;
+    margin-top: 20px;
+    border-top: 1px solid #ddd;
+}
 
-        <div class="card">
-            <h3>Total Comments</h3>
-            <div class="number"><?= $totalComments ?></div>
-        </div>
+.activity-bar {
+    flex: 1;
+    max-width: 120px;
+    text-align: center;
+}
 
-        <div class="card">
-            <h3>Total Bookmarks</h3>
-            <div class="number"><?= $totalBookmarks ?></div>
-        </div>
+.activity-bar-fill {
+    background: #16834b;
+    border-radius: 8px 8px 0 0;
+    min-height: 3px;
+}
 
-        <div class="card">
-            <h3>Total Reports</h3>
-            <div class="number"><?= $totalReports ?></div>
-        </div>
-    </section>
-
-    <section class="chart-box">
-        <h2>Platform Activity Overview</h2>
-        <div class="chart" id="activityChart"></div>
-    </section>
-
-</main>
+.activity-bar-label {
+    margin-top: 10px;
+    font-size: 13px;
+}
+</style>
 
 <script>
-    const activity = {
-        Users: <?= (int) $totalUsers ?>,
-        News: <?= (int) $totalNews ?>,
-        Comments: <?= (int) $totalComments ?>,
-        Bookmarks: <?= (int) $totalBookmarks ?>,
-        Reports: <?= (int) $totalReports ?>
-    };
+const activityData = {
+    Users: <?= (int)$totalUsers ?>,
+    News: <?= (int)$totalNews ?>,
+    Comments: <?= (int)$totalComments ?>,
+    Bookmarks: <?= (int)$totalBookmarks ?>,
+    Reports: <?= (int)$totalReports ?>
+};
 
-    const maxValue = Math.max(...Object.values(activity), 1);
-    const chart = document.getElementById('activityChart');
+const activityChart = document.getElementById('activityChart');
 
-    Object.entries(activity).forEach(([label, value]) => {
-        const group = document.createElement('div');
-        group.className = 'bar-group';
+if (activityChart) {
+    const maxValue = Math.max(1, ...Object.values(activityData));
 
+    Object.entries(activityData).forEach(([label, value]) => {
         const bar = document.createElement('div');
-        bar.className = 'bar';
-        bar.style.height = `${Math.max((value / maxValue) * 180, 3)}px`;
+        bar.className = 'activity-bar';
+
+        const fill = document.createElement('div');
+        fill.className = 'activity-bar-fill';
+        fill.style.height = `${Math.max(3, (value / maxValue) * 150)}px`;
 
         const count = document.createElement('div');
         count.textContent = value;
 
         const name = document.createElement('div');
-        name.className = 'bar-label';
+        name.className = 'activity-bar-label';
         name.textContent = label;
 
-        group.appendChild(count);
-        group.appendChild(bar);
-        group.appendChild(name);
-        chart.appendChild(group);
+        bar.append(count, fill, name);
+        activityChart.appendChild(bar);
     });
+}
 </script>
-
 </body>
 </html>
-
