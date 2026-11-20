@@ -149,11 +149,18 @@ if ($userRole === 'student') {
 /*
  * MODERATOR: approve or reject a pending article.
  */
+
 if ($userRole === 'moderator') {
+    if ((int) $article['author_id'] === $userId) {
+        http_response_code(403);
+        exit('You cannot review your own article.');
+    }
+
     if ($article['status'] !== 'pending') {
         http_response_code(409);
         exit('Only pending articles can be reviewed.');
     }
+
 
     $action = $_POST['action'] ?? '';
 
@@ -162,7 +169,12 @@ if ($userRole === 'moderator') {
         exit('Choose approve or reject.');
     }
 
-    $rejectionReason = trim($_POST['rejection_reason'] ?? '');
+$rejectionReason = trim($_POST['rejection_reason'] ?? '');
+
+if (mb_strlen($rejectionReason) > 2000) {
+    http_response_code(422);
+    exit('Rejection reason must not exceed 2000 characters.');
+}
 
     if ($action === 'reject' && $rejectionReason === '') {
         http_response_code(422);
