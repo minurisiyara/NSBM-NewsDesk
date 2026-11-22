@@ -1,10 +1,27 @@
-<?php
-require_once '../../backend/config/database.php';
-require_once '../../backend/config/session.php';
+// Additional dashboard analytics
+$totalUsers = (int) $pdo->query(
+    "SELECT COUNT(*) FROM users"
+)->fetchColumn();
 
-// Session Check
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../auth/login.php");
+$totalComments = (int) $pdo->query(
+    "SELECT COUNT(*) FROM comments"
+)->fetchColumn();
+
+$totalBookmarks = (int) $pdo->query(
+    "SELECT COUNT(*) FROM bookmarks"
+)->fetchColumn();
+
+$totalReports = (int) $pdo->query(
+    "SELECT COUNT(*) FROM content_reports"
+)->fetchColumn();<?php
+require_once __DIR__ . '/../../backend/config/session.php';
+require_once __DIR__ . '/../../backend/config/database.php';
+
+if (
+    empty($_SESSION['user_id']) ||
+    ($_SESSION['user_role'] ?? '') !== 'admin'
+) {
+    header('Location: ../auth/login.php');
     exit;
 }
 
@@ -113,10 +130,15 @@ try {
         <section class="data-card">
             <div class="card-header">
                 <h2>Analytics</h2>
-            </div>
-            <div class="analytics-placeholder">
-                <p>Section Reserved for Tharushika's Analytics Components.</p>
-            </div>
+<div class="analytics-content">
+    <h3>Platform Activity Overview</h3>
+
+    <p>Total Users: <?= (int)($totalUsers ?? 0) ?></p>
+    <p>Total News: <?= (int)($totalNews ?? 0) ?></p>
+    <p>Total Comments: <?= (int)($totalComments ?? 0) ?></p>
+    <p>Total Bookmarks: <?= (int)($totalBookmarks ?? 0) ?></p>
+    <p>Total Reports: <?= (int)($totalReports ?? 0) ?></p> <div id="activityChart" class="activity-chart"></div>
+</div>
         </section>
 
         <!-- Dynamic Tables Grid -->
@@ -192,5 +214,69 @@ try {
     </main>
 
     <script src="../../assets/js/admin.js"></script>
+    <style>
+.activity-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 15px;
+    height: 230px;
+    padding: 20px;
+    margin-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+.activity-bar {
+    flex: 1;
+    max-width: 120px;
+    text-align: center;
+}
+
+.activity-bar-fill {
+    background: #16834b;
+    border-radius: 8px 8px 0 0;
+    min-height: 3px;
+}
+
+.activity-bar-label {
+    margin-top: 10px;
+    font-size: 13px;
+}
+</style>
+
+<script>
+const activityData = {
+    Users: <?= (int)$totalUsers ?>,
+    News: <?= (int)$totalNews ?>,
+    Comments: <?= (int)$totalComments ?>,
+    Bookmarks: <?= (int)$totalBookmarks ?>,
+    Reports: <?= (int)$totalReports ?>
+};
+
+const activityChart = document.getElementById('activityChart');
+
+if (activityChart) {
+    const maxValue = Math.max(1, ...Object.values(activityData));
+
+    Object.entries(activityData).forEach(([label, value]) => {
+        const bar = document.createElement('div');
+        bar.className = 'activity-bar';
+
+        const fill = document.createElement('div');
+        fill.className = 'activity-bar-fill';
+        fill.style.height = `${Math.max(3, (value / maxValue) * 150)}px`;
+
+        const count = document.createElement('div');
+        count.textContent = value;
+
+        const name = document.createElement('div');
+        name.className = 'activity-bar-label';
+        name.textContent = label;
+
+        bar.append(count, fill, name);
+        activityChart.appendChild(bar);
+    });
+}
+</script>
 </body>
 </html>
