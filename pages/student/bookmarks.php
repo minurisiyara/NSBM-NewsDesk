@@ -1,8 +1,7 @@
 <?php
 
-declare(strict_types=1);
-
 require_once dirname(__DIR__, 2) . '/backend/config/session.php';
+require_once dirname(__DIR__, 2) . '/backend/config/database.php';
 
 // Check user login
 if (!isset($_SESSION['user_id'])) {
@@ -18,27 +17,37 @@ if (($_SESSION['user_role'] ?? '') !== 'student') {
 
 $name = $_SESSION['user_name'] ?? 'Student';
 
-// Demo bookmarks
-$bookmarks = [
-    [
-        'title' => 'Latest Technology Trends in 2026',
-        'category' => 'Technology',
-        'date' => 'November 05, 2026',
-        'description' => 'Discover the latest technology developments and innovations.'
-    ],
-    [
-        'title' => 'University Events and Activities',
-        'category' => 'Education',
-        'date' => 'November 04, 2026',
-        'description' => 'Explore the latest university events and student activities.'
-    ],
-    [
-        'title' => 'Sports News and Updates',
-        'category' => 'Sports',
-        'date' => 'November 03, 2026',
-        'description' => 'Read the latest sports news and exciting updates.'
-    ]
-];
+// Get bookmarks from database
+$userId = (int) $_SESSION['user_id'];
+
+$sql = "
+    SELECT
+        b.id AS bookmark_id,
+        a.id AS article_id,
+        a.title,
+        a.content AS description,
+        c.name AS category,
+        COALESCE(a.published_at, a.created_at) AS date
+    FROM bookmarks b
+    INNER JOIN articles a ON a.id = b.article_id
+    LEFT JOIN categories c ON c.id = a.category_id
+    WHERE b.user_id = :user_id
+      AND a.status = 'published'
+    ORDER BY b.created_at DESC
+";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute(['user_id' => $userId]);
+
+$bookmarks = $stmt->fetchAll();
+
+foreach ($bookmarks as &$bookmark) {
+    $bookmark['date'] = date(
+        'F d, Y',
+        strtotime($bookmark['date'])
+    );
+}
+unset($bookmark);
 
 ?>
 
@@ -161,70 +170,109 @@ $bookmarks = [
 
         <div class="bookmark-grid" id="bookmarkGrid">
 
-            <?php foreach ($bookmarks as $index => $article): ?>
+            <?php if (!empty($bookmarks)): ?>
 
-                <div class="bookmark-card">
+                <?php foreach ($bookmarks as $article): ?>
 
-                    <span class="category">
-                        <?= htmlspecialchars($article['category']) ?>
-                    </span>
+                    <div class="bookmark-card">
 
-                    <h3>
-                        <?= htmlspecialchars($article['title']) ?>
-                    </h3>
+                        <span class="category">
+                            <?= htmlspecialchars($article['category'] ?? 'General', ENT_QUOTES, 'UTF-8') ?>
+                        </span>
 
-                    <p class="date">
-                        <?= htmlspecialchars($article['date']) ?>
-                    </p>
+                        <h3>
+                            <?= htmlspecialchars($article['title'], ENT_QUOTES, 'UTF-8') ?>
+                        </h3>
 
-                    <p class="description">
-                        <?= htmlspecialchars($article['description']) ?>
-                    </p>
+                        <p class="date">
+                            <?= htmlspecialchars($article['date'], ENT_QUOTES, 'UTF-8') ?>
+                        </p>
 
-                    <div class="buttons">
+                        <p class="description">
+                            <?= htmlspecialchars($article['description'], ENT_QUOTES, 'UTF-8') ?>
+                        </p>
 
-                        <a href="../article.php">
-                            <button class="read-btn" type="button">
-                                Read Article
-                            </button>
-                        </a>
+                        <div class="buttons">
 
-                        <button
-                            class="remove-btn"
-                            type="button"
-                            onclick="removeBookmark(this)">
-                            Remove
-                        </button>
+                            <a href="../article.php?id=<?= (int) $article['article_id'] ?>">
+                                <button class="read-btn" type="button">
+                                    Read Article
+                                </button>
+                            </a>
+
+                            <button class="remove-btn"
+        data-bookmark-id="<?= (int) $article['bookmark_id'] ?>"
+        onclick="removeBookmark(this)">
+    Remove
+</button>
+
+                        </div>
 
                     </div>
 
+                <?php endforeach; ?>
+
+            <?php else: ?>
+
+                <div class="empty-message" style="display: block;">
+                    <h3>No Bookmarks Found!</h3>
+                    <p>You have not saved any articles yet.</p>
                 </div>
 
-            <?php endforeach; ?>
+            <?php endif; ?>
 
-        </div>
-
-        <div class="empty-message" id="emptyMessage">
-            <h3>No Bookmarks Found!</h3>
-            <p>You have not saved any articles yet.</p>
         </div>
 
     </main>
 
     <script>
-        function removeBookmark(button) {
+        const bookmarkCsrf = <?= json_encode($_SESSION['bookmark_csrf']) ?>;
 
-            if (confirm("Are you sure you want to remove this bookmark?")) {
+async function removeBookmark(button) {
 
-                button.closest(".bookmark-card").remove();
+    if (!confirm("Are you sure you want to remove this bookmark?")) {
+        return;
+    }
 
-                const grid = document.getElementById("bookmarkGrid");
+    const bookmarkId = button.dataset.bookmarkId;
 
-                if (grid.children.length === 0) {
-                    document.getElementById("emptyMessage").style.display = "block";
-                }
-            }
+    try {
+        const response = await fetch("../../backend/bookmarks/remove.php", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                bookmark_id: bookmarkId,
+                csrf: bookmarkCsrf
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            alert(result.message || "Unable to remove bookmark.");
+            return;
         }
+
+        button.closest(".bookmark-card").remove();
+
+        const grid = document.getElementById("bookmarkGrid");
+
+        if (grid.querySelectorAll(".bookmark-card").length === 0) {
+            grid.innerHTML = `
+                <div class="empty-message" style="display: block;">
+                    <h3>No Bookmarks Found!</h3>
+                    <p>You have not saved any articles yet.</p>
+                </div>
+            `;
+        }
+
+    } catch (error) {
+        alert("Something went wrong. Please try again.");
+        console.error(error);
+    }
+}
     </script>
 
 </body>

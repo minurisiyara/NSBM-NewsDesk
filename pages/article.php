@@ -1,7 +1,14 @@
-<?php
-// Temporary sample article data for frontend development.
-// Later, this data can be loaded from the database.
 
+<?php
+
+require_once dirname(__DIR__) . '/backend/config/session.php';
+
+// Generate CSRF token for comments
+if (empty($_SESSION['comment_csrf'])) {
+    $_SESSION['comment_csrf'] = bin2hex(random_bytes(32));
+}
+
+// Temporary sample article data
 $article = [
     "id" => 1,
     "title" => "NSBM Green University Organizes Annual Technology Exhibition",
@@ -18,14 +25,13 @@ $article = [
     ]
 ];
 
-// Get the article ID from the URL.
+// Get article ID from URL
 $articleId = isset($_GET['id']) ? (int) $_GET['id'] : 1;
 
-// Check whether the requested article exists.
-// This is temporary sample data containing only article ID 1.
+// Temporary sample data contains only article ID 1
 $articleFound = ($articleId === $article['id']);
 
-// Temporary related articles.
+// Temporary related articles
 $relatedArticles = [
     [
         "title" => "Students Explore New Technologies",
@@ -46,10 +52,12 @@ $relatedArticles = [
         "link" => "article.php?id=1"
     ]
 ];
+
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -59,18 +67,20 @@ $relatedArticles = [
         | NSBM NewsDesk
     </title>
 
-    <!-- Article page stylesheet -->
     <link rel="stylesheet" href="../assets/css/article.css">
 </head>
 
 <body>
 
 <!-- ================= HEADER / NAVIGATION ================= -->
+
 <header class="site-header">
+
     <div class="header-container">
 
         <a href="home.php" class="logo">
-            <img src="../assets/images/nsbm-logo.png" alt="NSBM Green University Logo"><span>NewsDesk</span>
+            <img src="../assets/images/nsbm-logo.png" alt="NSBM Green University Logo">
+            <span>NewsDesk</span>
         </a>
 
         <nav class="main-nav">
@@ -78,81 +88,114 @@ $relatedArticles = [
             <a href="news.php">News</a>
             <a href="news.php">Categories</a>
             <a href="search.php">Search</a>
-            <a href="login.php" class="login-link">Login</a>
+
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="student/dashboard.php">Dashboard</a>
+            <?php else: ?>
+                <a href="auth/login.php" class="login-link">Login</a>
+            <?php endif; ?>
+
         </nav>
 
     </div>
+
 </header>
 
 
 <?php if ($articleFound): ?>
 
-<!-- ================= MAIN ARTICLE ================= -->
+<!-- ================= ARTICLE CONTENT ================= -->
+
 <main class="article-page">
 
-    <!-- Breadcrumb navigation -->
-    <div class="breadcrumb">
-        <a href="home.php">Home</a>
-        <span>/</span>
-        <a href="news.php">News</a>
-        <span>/</span>
-        <span>Article Details</span>
-    </div>
+    <div class="article-container">
 
-    <div class="article-layout">
+        <article class="article-main">
 
-        <!-- Article content -->
-        <article class="article-content">
+            <!-- Article heading -->
 
-            <span class="article-category">
-                <?php echo htmlspecialchars($article['category']); ?>
-            </span>
+            <div class="article-header">
 
-            <h1 class="article-title">
-                <?php echo htmlspecialchars($article['title']); ?>
-            </h1>
+                <span class="article-category">
+                    <?php echo htmlspecialchars($article['category']); ?>
+                </span>
 
-            <div class="article-meta">
-                <span>By <?php echo htmlspecialchars($article['author']); ?></span>
-                <span>•</span>
-                <span><?php echo htmlspecialchars($article['date']); ?></span>
-                <span>•</span>
-                <span><?php echo htmlspecialchars($article['read_time']); ?></span>
+                <h1>
+                    <?php echo htmlspecialchars($article['title']); ?>
+                </h1>
+
+                <div class="article-meta">
+
+                    <span>
+                        By <?php echo htmlspecialchars($article['author']); ?>
+                    </span>
+
+                    <span>
+                        <?php echo htmlspecialchars($article['date']); ?>
+                    </span>
+
+                    <span>
+                        <?php echo htmlspecialchars($article['read_time']); ?>
+                    </span>
+
+                </div>
+
             </div>
 
-            <!-- Main article image -->
-            <img
-                src="<?php echo htmlspecialchars($article['image']); ?>"
-                alt="Technology exhibition at NSBM"
-                class="article-main-image"
-            >
 
-            <!-- Bookmark button -->
+            <!-- Article image -->
+
+            <div class="article-image">
+
+                <img
+                    src="<?php echo htmlspecialchars($article['image']); ?>"
+                    alt="<?php echo htmlspecialchars($article['title']); ?>"
+                >
+
+            </div>
+
+
+            <!-- Article actions -->
+
             <div class="article-actions">
-                <button type="button" class="bookmark-btn" id="bookmarkBtn">
+
+                <button
+                    type="button"
+                    class="bookmark-btn"
+                    id="bookmarkBtn"
+                    aria-label="Save article"
+                >
                     ♡ <span>Save Article</span>
                 </button>
+
+                <button
+                    type="button"
+                    class="share-btn"
+                    id="shareBtn"
+                >
+                    Share Article
+                </button>
+
             </div>
 
-            <!-- Full article paragraphs -->
-            <div class="article-body">
+
+            <!-- Article body -->
+
+            <div class="article-content">
 
                 <?php foreach ($article['content'] as $paragraph): ?>
-                    <p><?php echo htmlspecialchars($paragraph); ?></p>
+
+                    <p>
+                        <?php echo htmlspecialchars($paragraph); ?>
+                    </p>
+
                 <?php endforeach; ?>
 
             </div>
 
-            <!-- Share section -->
-            <div class="share-section">
-                <h3>Share this article</h3>
-
-                <button type="button" id="shareBtn">
-                    Share Article
-                </button>
-            </div>
 
             <!-- ================= COMMENTS ================= -->
+
             <section class="comments-section">
 
                 <h2>Comments</h2>
@@ -161,35 +204,71 @@ $relatedArticles = [
                     Share your thoughts about this article.
                 </p>
 
-                <!-- Frontend placeholder form.
-                     Comments are not saved to a database yet. -->
-                <form id="commentForm">
+                <?php if (
+                    isset($_SESSION['user_id']) &&
+                    ($_SESSION['user_role'] ?? '') === 'student'
+                ): ?>
 
-                    <label for="commentName">Your Name</label>
-                    <input
-                        type="text"
-                        id="commentName"
-                        placeholder="Enter your name"
-                        required
+                    <form
+                        id="commentForm"
+                        method="POST"
+                        action="../backend/comments/create.php"
                     >
 
-                    <label for="commentText">Your Comment</label>
-                    <textarea
-                        id="commentText"
-                        placeholder="Write your comment..."
-                        rows="4"
-                        required
-                    ></textarea>
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="<?php echo htmlspecialchars($_SESSION['comment_csrf']); ?>"
+                        >
 
-                    <button type="submit" class="submit-comment">
-                        Post Comment
-                    </button>
+                        <input
+                            type="hidden"
+                            name="article_id"
+                            value="<?php echo (int) $articleId; ?>"
+                        >
 
-                </form>
+                        <label for="commentText">Your Comment</label>
 
-                <p id="commentMessage" class="comment-message"></p>
+                        <textarea
+                            id="commentText"
+                            name="content"
+                            placeholder="Write your comment..."
+                            rows="4"
+                            maxlength="2000"
+                            required
+                        ></textarea>
 
-                <div id="commentList"></div>
+                        <p>Maximum 2000 characters.</p>
+
+                        <button type="submit" class="submit-comment">
+                            Post Comment
+                        </button>
+
+                    </form>
+
+                <?php else: ?>
+
+                    <p>
+                        Please
+                        <a href="auth/login.php">login</a>
+                        as a student to post a comment.
+                    </p>
+
+                <?php endif; ?>
+
+                <div id="commentMessage" class="comment-message">
+
+                    <?php if (isset($_GET['comment_success'])): ?>
+                        Your comment was submitted and is awaiting approval.
+                    <?php elseif (isset($_GET['comment_error'])): ?>
+                        Unable to submit your comment. Please try again.
+                    <?php endif; ?>
+
+                </div>
+
+                <div id="commentList">
+                    <p>Comments will appear here.</p>
+                </div>
 
             </section>
 
@@ -197,6 +276,7 @@ $relatedArticles = [
 
 
         <!-- ================= RELATED ARTICLES ================= -->
+
         <aside class="related-section">
 
             <h2>Related Articles</h2>
@@ -231,9 +311,11 @@ $relatedArticles = [
 
 </main>
 
+
 <?php else: ?>
 
 <!-- ================= ARTICLE NOT FOUND ================= -->
+
 <main class="not-found">
 
     <div class="not-found-icon">!</div>
@@ -255,9 +337,11 @@ $relatedArticles = [
 
 
 <!-- ================= FOOTER ================= -->
+
 <footer class="site-footer">
 
     <div class="footer-content">
+
         <h2>NSBM <span>NewsDesk</span></h2>
 
         <p>
@@ -268,17 +352,16 @@ $relatedArticles = [
         <p class="copyright">
             &copy; 2026 NSBM NewsDesk. All rights reserved.
         </p>
+
     </div>
 
 </footer>
 
 
 <!-- Article page JavaScript -->
+
 <script src="../assets/js/article.js"></script>
+<script src="../assets/js/comments.js"></script>
 
 </body>
 </html>
-
-
-
-
