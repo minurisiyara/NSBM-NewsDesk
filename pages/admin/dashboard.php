@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-require_once '../../backend/config/session.php';
-require_once '../../backend/config/database.php';
+require_once __DIR__ . '/../../backend/config/session.php';
+require_once __DIR__ . '/../../backend/config/database.php';
 
 // Enforce Admin Authentication
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
@@ -19,7 +19,7 @@ $activePage = 'dashboard';
 $loggedInUserName = $_SESSION['user_name'] ?? 'Admin User';
 $firstLetter = strtoupper(substr($loggedInUserName, 0, 1));
 
-// Fetch Dashboard Statistics & Summaries
+// Fetch Dashboard Statistics, Analytics & Summaries
 try {
     $totalNews = (int) $pdo->query("SELECT COUNT(*) FROM articles")->fetchColumn();
     
@@ -31,6 +31,12 @@ try {
     ")->fetchColumn();
 
     $activeCategories = (int) $pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn();
+
+    // Platform Activity Analytics (Merged from dev branch)
+    $totalUsers = (int) $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+    $totalComments = (int) $pdo->query("SELECT COUNT(*) FROM comments")->fetchColumn();
+    $totalBookmarks = (int) $pdo->query("SELECT COUNT(*) FROM bookmarks")->fetchColumn();
+    $totalReports = (int) $pdo->query("SELECT COUNT(*) FROM content_reports")->fetchColumn();
 
     // Fetch 5 Most Recent Articles
     $recentStmt = $pdo->query("
@@ -57,6 +63,10 @@ try {
     $totalNews = 0;
     $publishedThisMonth = 0;
     $activeCategories = 0;
+    $totalUsers = 0;
+    $totalComments = 0;
+    $totalBookmarks = 0;
+    $totalReports = 0;
     $recentArticles = [];
     $categoriesSummary = [];
 }
@@ -67,7 +77,73 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | NSBM NewsDesk Admin</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css?v=4">
+    <link rel="stylesheet" href="../../assets/css/admin.css?v=8">
+    <script>
+        if (localStorage.getItem('nsbm-admin-sidebar-collapsed') === 'true') {
+            document.documentElement.classList.add('sidebar-collapsed');
+        }
+    </script>
+    <style>
+        .analytics-metrics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+        .metric-pill {
+            background: #eef5f1;
+            color: #09482e;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .activity-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            gap: 24px;
+            height: 220px;
+            padding: 24px 32px 16px;
+            margin-top: 14px;
+            border-top: 1px solid #e5e7eb;
+            background-image: linear-gradient(to bottom, #f3f4f6 1px, transparent 1px);
+            background-size: 100% 44px;
+        }
+        .activity-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 64px;
+            text-align: center;
+        }
+        .activity-bar-fill {
+            width: 44px;
+            background: linear-gradient(180deg, #0d6340 0%, #09482e 100%);
+            border-radius: 6px 6px 0 0;
+            min-height: 4px;
+            margin-top: 6px;
+            transition: height 0.3s ease;
+        }
+        .activity-bar-label {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #4b5563;
+            font-weight: 600;
+        }
+        .activity-bar-fill {
+            background: #09482e;
+            border-radius: 8px 8px 0 0;
+            min-height: 4px;
+            margin-top: 6px;
+        }
+        .activity-bar-label {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #4b5563;
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
 
@@ -111,15 +187,19 @@ try {
                 </div>
             </section>
 
-            <!-- Reserved Analytics Component Container for Tharushika -->
+            <!-- Platform Activity Analytics (Merged with Admin Panel Card UI) -->
             <section class="panel-card" id="analyticsContainer">
                 <div class="panel-header">
-                    <h2>Campus Traffic Analytics</h2>
+                    <h2>Platform Activity Overview</h2>
                 </div>
-                <div style="padding: 36px 20px; text-align: center; background: #f9fafb; border-radius: 8px; border: 1px dashed #d1d5db; color: #6b7280;">
-                    <p style="font-weight: 600; margin-bottom: 4px;">Analytics Component Reserved Area</p>
-                    <small>Integration slot for Tharushika's traffic charts and engagement metrics.</small>
+                <div class="analytics-metrics">
+                    <span class="metric-pill">Total Users: <?= $totalUsers ?></span>
+                    <span class="metric-pill">Total News: <?= $totalNews ?></span>
+                    <span class="metric-pill">Total Comments: <?= $totalComments ?></span>
+                    <span class="metric-pill">Total Bookmarks: <?= $totalBookmarks ?></span>
+                    <span class="metric-pill">Total Reports: <?= $totalReports ?></span>
                 </div>
+                <div id="activityChart" class="activity-chart"></div>
             </section>
 
             <!-- Bottom Two-Column Overview Grid -->
@@ -195,6 +275,42 @@ try {
         </div>
     </main>
 
-    <script src="../../assets/js/admin.js"></script>
+    <script src="../../assets/js/admin.js?v=6"></script>
+    <script>
+        const activityData = {
+            Users: <?= $totalUsers ?>,
+            News: <?= $totalNews ?>,
+            Comments: <?= $totalComments ?>,
+            Bookmarks: <?= $totalBookmarks ?>,
+            Reports: <?= $totalReports ?>
+        };
+
+        const activityChart = document.getElementById('activityChart');
+
+        if (activityChart) {
+            const maxValue = Math.max(1, ...Object.values(activityData));
+
+            Object.entries(activityData).forEach(([label, value]) => {
+                const bar = document.createElement('div');
+                bar.className = 'activity-bar';
+
+                const fill = document.createElement('div');
+                fill.className = 'activity-bar-fill';
+                fill.style.height = `${Math.max(4, (value / maxValue) * 150)}px`;
+
+                const count = document.createElement('div');
+                count.style.fontWeight = '700';
+                count.style.fontSize = '13px';
+                count.textContent = value;
+
+                const name = document.createElement('div');
+                name.className = 'activity-bar-label';
+                name.textContent = label;
+
+                bar.append(count, fill, name);
+                activityChart.appendChild(bar);
+            });
+        }
+    </script>
 </body>
 </html>
