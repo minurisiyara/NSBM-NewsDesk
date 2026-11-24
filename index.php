@@ -1,6 +1,7 @@
 <?php
 // Target destination
-$redirectUrl = "../NSBM-NewsDesk/pages/home.php";
+$redirectUrl = "pages/home.php";
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -103,7 +104,6 @@ $redirectUrl = "../NSBM-NewsDesk/pages/home.php";
 </head>
 
 <body>
-
     <div class="loader-container">
         <div class="logo">
             NSBM<span> NewsDesk</span>
