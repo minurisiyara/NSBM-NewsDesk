@@ -9,9 +9,10 @@ unset($_SESSION['register_errors']);
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-   
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Account | NSBM NewsDesk</title>
     <link rel="stylesheet" href="../../assets/css/auth.css">
 </head>
@@ -30,7 +31,7 @@ unset($_SESSION['register_errors']);
             </div>
         <?php endif; ?>
 
-    <form action="../../backend/auth/register.php" method="POST" id="registerForm">
+        <form action="../../backend/auth/register.php" method="POST">
             <input
                 type="hidden"
                 name="csrf_token"
@@ -82,9 +83,7 @@ unset($_SESSION['register_errors']);
                 >
             </div>
 
-            <button type="submit" id="registerButton">
-                 Create Account
-            </button>
+            <button type="submit">Create Account</button>
         </form>
 
         <p>
@@ -92,7 +91,6 @@ unset($_SESSION['register_errors']);
             <a href="login.php">Log in</a>
         </p>
     </main>
-    <script src="../../assets/js/auth.js"></script>
 
 </body>
 </html>
