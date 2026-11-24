@@ -1,346 +1,390 @@
 <?php
 declare(strict_types=1);
 
-require_once '../../backend/config/session.php';
-require_once '../../backend/config/database.php';
+require_once dirname(__DIR__, 2) . '/components/admin-layout.php';
+require_once dirname(__DIR__, 2) . '/backend/config/database.php';
 
-// Enforce Admin Authentication
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
-    header('Location: ../auth/login.php');
-    exit;
-}
+$message = '';
+$error = '';
 
-// Generate CSRF token if missing
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-$activePage = 'users';
-$currentAdminId = (int) $_SESSION['user_id'];
-$loggedInUserName = $_SESSION['user_name'] ?? 'Admin User';
-$firstLetter = strtoupper(substr($loggedInUserName, 0, 1));
-
-$flashSuccess = $_SESSION['flash_success'] ?? '';
-$flashError = $_SESSION['flash_error'] ?? '';
-unset($_SESSION['flash_success'], $_SESSION['flash_error']);
-
-// Handle POST Actions (Add User, Change Role, Toggle Status, Delete User)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $token = $_POST['csrf_token'] ?? '';
-    if (!hash_equals($_SESSION['csrf_token'], $token)) {
-        $_SESSION['flash_error'] = 'Invalid security token. Please try again.';
-        header('Location: users.php');
-        exit;
-    }
-
-    $action = $_POST['action'] ?? '';
-
+/**
+ * Inspect existing columns of `users` table so queries adapt cleanly.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function admin_get_users_schema(PDO $pdo): array
+{
+    $schema = [];
     try {
-        // 1. Add New User (Admin / Moderator / Student)
-        if ($action === 'add_user') {
-            $name = trim($_POST['name'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $password = $_POST['password'] ?? '';
-            $role = in_array($_POST['role'] ?? '', ['student', 'moderator', 'admin'], true) ? $_POST['role'] : 'student';
-            $isActive = isset($_POST['is_active']) ? 1 : 0;
-
-            if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 6) {
-                $_SESSION['flash_error'] = 'Please enter a valid name, email address, and a password (minimum 6 characters).';
-                header('Location: users.php');
-                exit;
-            }
-
-            // Duplicate Email Check
-            $dupStmt = $pdo->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1");
-            $dupStmt->execute(['email' => $email]);
-            if ($dupStmt->fetch()) {
-                $_SESSION['flash_error'] = "An account with email '{$email}' already exists.";
-                header('Location: users.php');
-                exit;
-            }
-
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("
-                INSERT INTO users (name, email, password, role, is_active)
-                VALUES (:name, :email, :password, :role, :is_active)
-            ");
-            $stmt->execute([
-                'name' => $name,
-                'email' => $email,
-                'password' => $hashedPassword,
-                'role' => $role,
-                'is_active' => $isActive
-            ]);
-
-            $_SESSION['flash_success'] = "New {$role} account created for {$name}.";
-        }
-
-        // 2. Update User Role
-        if ($action === 'update_role') {
-            $targetUserId = (int) ($_POST['user_id'] ?? 0);
-            $newRole = $_POST['role'] ?? '';
-
-            if ($targetUserId === $currentAdminId) {
-                $_SESSION['flash_error'] = 'You cannot change your own administrator role.';
-            } elseif (!in_array($newRole, ['student', 'moderator', 'admin'], true)) {
-                $_SESSION['flash_error'] = 'Invalid role selected.';
-            } else {
-                $stmt = $pdo->prepare("UPDATE users SET role = :role WHERE id = :id");
-                $stmt->execute(['role' => $newRole, 'id' => $targetUserId]);
-                $_SESSION['flash_success'] = 'User role updated successfully.';
+        $stmt = $pdo->query("SHOW COLUMNS FROM users");
+        foreach ($stmt->fetchAll() as $row) {
+            if (!empty($row['Field'])) {
+                $schema[(string) $row['Field']] = $row;
             }
         }
+    } catch (Throwable $e) {
+        // Fallback if SHOW COLUMNS is restricted
+    }
+    return $schema;
+}
 
-        // 3. Toggle Active / Suspended Status
-        if ($action === 'toggle_status') {
-            $targetUserId = (int) ($_POST['user_id'] ?? 0);
+/**
+ * Resolve role column name in `users` table.
+ */
+function admin_role_column(array $schema): string
+{
+    if (isset($schema['role'])) {
+        return 'role';
+    }
+    if (isset($schema['user_role'])) {
+        return 'user_role';
+    }
+    return 'role';
+}
 
-            if ($targetUserId === $currentAdminId) {
-                $_SESSION['flash_error'] = 'You cannot suspend your own logged-in account.';
+/**
+ * Determine whether a user row represents a suspended state.
+ */
+function admin_user_is_suspended(array $user, array $schema): bool
+{
+    if (isset($schema['status'])) {
+        return strtolower((string) ($user['status'] ?? 'active')) === 'suspended';
+    }
+    if (isset($schema['is_active'])) {
+        return (int) ($user['is_active'] ?? 1) === 0;
+    }
+    return false;
+}
+
+/**
+ * Persist suspended/active state safely across schemas.
+ */
+function admin_set_user_suspended(PDO $pdo, array $schema, int $userId, bool $suspend): void
+{
+    $roleCol = admin_role_column($schema);
+
+    if (isset($schema['status'])) {
+        $type = strtolower((string) ($schema['status']['Type'] ?? ''));
+        $targetValue = 'suspended';
+
+        if (str_contains($type, 'enum(')) {
+            preg_match_all("/'([^']+)'/", $type, $matches);
+            $allowedEnum = array_map('strtolower', $matches[1] ?? []);
+            if ($suspend) {
+                foreach (['suspended', 'inactive', 'blocked', 'banned'] as $candidate) {
+                    if (in_array($candidate, $allowedEnum, true)) {
+                        $targetValue = $candidate;
+                        break;
+                    }
+                }
             } else {
-                $stmt = $pdo->prepare("UPDATE users SET is_active = NOT is_active WHERE id = :id");
-                $stmt->execute(['id' => $targetUserId]);
-                $_SESSION['flash_success'] = 'User account status updated.';
-            }
-        }
-
-        // 4. Delete User (With Foreign Key Protection)
-        if ($action === 'delete_user') {
-            $targetUserId = (int) ($_POST['user_id'] ?? 0);
-
-            if ($targetUserId === $currentAdminId) {
-                $_SESSION['flash_error'] = 'You cannot delete your own logged-in account.';
-            } else {
-                try {
-                    $stmt = $pdo->prepare("DELETE FROM users WHERE id = :id");
-                    $stmt->execute(['id' => $targetUserId]);
-                    $_SESSION['flash_success'] = 'User account deleted permanently.';
-                } catch (PDOException $fkError) {
-                    // Schema enforces ON DELETE RESTRICT if user has authored articles, comments, or reports
-                    $_SESSION['flash_error'] = 'Cannot delete this user because they have linked articles, comments, or reports. Please suspend the account instead.';
+                foreach (['active', 'approved', 'enabled'] as $candidate) {
+                    if (in_array($candidate, $allowedEnum, true)) {
+                        $targetValue = $candidate;
+                        break;
+                    }
                 }
             }
+        } elseif (!$suspend) {
+            $targetValue = 'active';
         }
 
-    } catch (PDOException $e) {
-        error_log('User management error: ' . $e->getMessage());
-        $_SESSION['flash_error'] = 'Database operation failed.';
+        $stmt = $pdo->prepare("UPDATE users SET status = ? WHERE id = ?");
+        $stmt->execute([$targetValue, $userId]);
+        return;
     }
 
-    header('Location: users.php');
-    exit;
+    if (isset($schema['is_active'])) {
+        $stmt = $pdo->prepare("UPDATE users SET is_active = ? WHERE id = ?");
+        $stmt->execute([$suspend ? 0 : 1, $userId]);
+        return;
+    }
+
+    // Fallback if neither `status` nor `is_active` exists: toggle between suspended/student role
+    if ($suspend) {
+        $stmt = $pdo->prepare("UPDATE users SET {$roleCol} = 'suspended' WHERE id = ?");
+        $stmt->execute([$userId]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE users SET {$roleCol} = 'student' WHERE id = ? AND LOWER({$roleCol}) = 'suspended'");
+        $stmt->execute([$userId]);
+    }
 }
 
-// Search & Role Filter
-$search = trim($_GET['search'] ?? '');
-$roleFilter = trim($_GET['role'] ?? '');
+$schema = admin_get_users_schema($pdo);
+$roleCol = admin_role_column($schema);
+$currentUserId = (int) ($_SESSION['user_id'] ?? 0);
 
-$sql = "SELECT id, name, email, role, is_active, created_at FROM users WHERE 1=1";
-$params = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = (string) ($_POST['action'] ?? '');
 
-if ($search !== '') {
-    $sql .= " AND (name LIKE :search OR email LIKE :search)";
-    $params['search'] = '%' . $search . '%';
-}
-if (in_array($roleFilter, ['student', 'moderator', 'admin'], true)) {
-    $sql .= " AND role = :role";
-    $params['role'] = $roleFilter;
-}
+    if ($action === 'create') {
+        $fullName = trim((string) ($_POST['name'] ?? ''));
+        $email = trim((string) ($_POST['email'] ?? ''));
+        $password = (string) ($_POST['password'] ?? '');
+        $role = strtolower(trim((string) ($_POST['role'] ?? 'student')));
 
-$sql .= " ORDER BY FIELD(role, 'admin', 'moderator', 'student'), created_at DESC";
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Users | NSBM NewsDesk Admin</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css?v=8">
-    <script>
-        if (localStorage.getItem('nsbm-admin-sidebar-collapsed') === 'true') {
-            document.documentElement.classList.add('sidebar-collapsed');
+        $allowedRoles = ['admin', 'moderator', 'student'];
+        if (!in_array($role, $allowedRoles, true)) {
+            $role = 'student';
         }
-    </script>
-</head>
-<body>
 
-    <?php include '../../components/admin-sidebar.php'; ?>
+        if ($fullName === '' || $email === '' || $password === '') {
+            $error = 'Name, email, and password are required.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Please enter a valid email address.';
+        } elseif (strlen($password) < 6) {
+            $error = 'Password must be at least 6 characters long.';
+        } else {
+            try {
+                $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
+                $checkStmt->execute([$email]);
+                if ((int) $checkStmt->fetchColumn() > 0) {
+                    $error = 'A user with this email already exists.';
+                } else {
+                    $hash = password_hash($password, PASSWORD_DEFAULT);
 
-    <main class="admin-main">
-        <!-- Top Header -->
-        <header class="top-bar">
-            <div class="top-bar-left">
-                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Menu">☰</button>
-                <h1>Users</h1>
-            </div>
-            <div class="top-bar-actions">
-                <div class="avatar-circle" title="<?= htmlspecialchars($loggedInUserName, ENT_QUOTES, 'UTF-8') ?>">
-                    <?= htmlspecialchars($firstLetter, ENT_QUOTES, 'UTF-8') ?>
-                </div>
-                <a href="../home.php" class="btn btn-outline">View Site</a>
-                <form action="../../backend/auth/logout.php" method="POST" style="margin:0;">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
-                    <button type="submit" class="btn btn-danger">Logout</button>
-                </form>
-            </div>
-        </header>
+                    $insertCols = [];
+                    $placeholders = [];
+                    $params = [];
 
-        <div class="content-wrapper">
-            <!-- Flash Feedback Messages -->
-            <?php if ($flashSuccess !== ''): ?>
-                <div class="alert alert-success"><?= htmlspecialchars($flashSuccess, ENT_QUOTES, 'UTF-8') ?></div>
-            <?php endif; ?>
-            <?php if ($flashError !== ''): ?>
-                <div class="alert alert-error"><?= htmlspecialchars($flashError, ENT_QUOTES, 'UTF-8') ?></div>
-            <?php endif; ?>
+                    if (isset($schema['full_name'])) {
+                        $insertCols[] = 'full_name';
+                        $placeholders[] = '?';
+                        $params[] = $fullName;
+                    }
+                    if (isset($schema['name'])) {
+                        $insertCols[] = 'name';
+                        $placeholders[] = '?';
+                        $params[] = $fullName;
+                    }
+                    if (empty($insertCols)) {
+                        $insertCols[] = 'name';
+                        $placeholders[] = '?';
+                        $params[] = $fullName;
+                    }
 
-            <!-- Search, Role Filter & Add User Bar -->
-            <form method="GET" action="users.php" style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 12px; margin-bottom: 20px;">
-                <input type="text" name="search" class="form-control" placeholder="Search by name or email..." value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>">
+                    $insertCols[] = 'email';
+                    $placeholders[] = '?';
+                    $params[] = $email;
 
-                <select name="role" class="form-control" onchange="this.form.submit()">
-                    <option value="">All roles</option>
-                    <option value="admin" <?= $roleFilter === 'admin' ? 'selected' : '' ?>>Admin</option>
-                    <option value="moderator" <?= $roleFilter === 'moderator' ? 'selected' : '' ?>>Moderator</option>
-                    <option value="student" <?= $roleFilter === 'student' ? 'selected' : '' ?>>Student</option>
-                </select>
+                    if (isset($schema['password_hash'])) {
+                        $insertCols[] = 'password_hash';
+                        $placeholders[] = '?';
+                        $params[] = $hash;
+                    } elseif (isset($schema['password'])) {
+                        $insertCols[] = 'password';
+                        $placeholders[] = '?';
+                        $params[] = $hash;
+                    } else {
+                        $insertCols[] = 'password_hash';
+                        $placeholders[] = '?';
+                        $params[] = $hash;
+                    }
 
-                <button type="button" class="btn btn-primary" onclick="openAddUserModal()">+ Add User</button>
-            </form>
+                    $insertCols[] = $roleCol;
+                    $placeholders[] = '?';
+                    $params[] = $role;
 
-            <!-- Users Data Table -->
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($users)): ?>
-                            <?php foreach ($users as $u): ?>
-                                <?php
-                                    $uId = (int) $u['id'];
-                                    $isSelf = ($uId === $currentAdminId);
-                                    $isActive = ((int) $u['is_active'] === 1);
-                                ?>
-                                <tr>
-                                    <td>
-                                        <strong><?= htmlspecialchars($u['name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <?php if ($isSelf): ?>
-                                            <span style="font-size: 11px; color: #09482e; font-weight: 600;">(You)</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td style="color: #6b7280;"><?= htmlspecialchars($u['email'], ENT_QUOTES, 'UTF-8') ?></td>
-                                    <td>
-                                        <!-- Inline Role Selector -->
-                                        <form method="POST" style="margin:0;">
-                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
-                                            <input type="hidden" name="action" value="update_role">
-                                            <input type="hidden" name="user_id" value="<?= $uId ?>">
-                                            <select name="role" class="form-control" style="padding: 6px 10px; width: auto; min-width: 120px;" onchange="this.form.submit()" <?= $isSelf ? 'disabled' : '' ?>>
-                                                <option value="admin" <?= $u['role'] === 'admin' ? 'selected' : '' ?>>Admin</option>
-                                                <option value="moderator" <?= $u['role'] === 'moderator' ? 'selected' : '' ?>>Moderator</option>
-                                                <option value="student" <?= $u['role'] === 'student' ? 'selected' : '' ?>>Student</option>
-                                            </select>
-                                        </form>
-                                    </td>
-                                    <td>
-                                        <span class="badge <?= $isActive ? 'badge-published' : 'badge-draft' ?>">
-                                            <?= $isActive ? 'Active' : 'Suspended' ?>
-                                        </span>
-                                    </td>
-                                    <td style="white-space: nowrap;">
-                                        <?php if (!$isSelf): ?>
-                                            <!-- Toggle Active / Suspend Button -->
-                                            <form method="POST" style="display:inline;">
-                                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
-                                                <input type="hidden" name="action" value="toggle_status">
-                                                <input type="hidden" name="user_id" value="<?= $uId ?>">
-                                                <button type="submit" class="btn btn-outline btn-sm">
-                                                    <?= $isActive ? 'Suspend' : 'Activate' ?>
-                                                </button>
-                                            </form>
+                    if (isset($schema['status'])) {
+                        $insertCols[] = 'status';
+                        $placeholders[] = '?';
+                        $params[] = 'active';
+                    } elseif (isset($schema['is_active'])) {
+                        $insertCols[] = 'is_active';
+                        $placeholders[] = '?';
+                        $params[] = 1;
+                    }
 
-                                            <!-- Delete User Button -->
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete this user?');">
-                                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
-                                                <input type="hidden" name="action" value="delete_user">
-                                                <input type="hidden" name="user_id" value="<?= $uId ?>">
-                                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                            </form>
-                                        <?php else: ?>
-                                            <span style="font-size: 12px; color: #9ca3af;">Current Session</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
+                    $sql = sprintf(
+                        "INSERT INTO users (%s) VALUES (%s)",
+                        implode(', ', $insertCols),
+                        implode(', ', $placeholders)
+                    );
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute($params);
+
+                    $message = 'New user added successfully.';
+                }
+            } catch (Throwable $e) {
+                $error = 'Could not add user: ' . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'update_role') {
+        $targetId = (int) ($_POST['id'] ?? 0);
+        $newRole = strtolower(trim((string) ($_POST['role'] ?? 'student')));
+        $allowedRoles = ['admin', 'moderator', 'student'];
+
+        if ($targetId <= 0 || !in_array($newRole, $allowedRoles, true)) {
+            $error = 'Invalid user or role selection.';
+        } elseif ($targetId === $currentUserId && $newRole !== 'admin') {
+            $error = 'You cannot demote your own currently logged-in admin account.';
+        } else {
+            try {
+                $stmt = $pdo->prepare("UPDATE users SET {$roleCol} = ? WHERE id = ?");
+                $stmt->execute([$newRole, $targetId]);
+                $message = 'User role updated successfully.';
+            } catch (Throwable $e) {
+                $error = 'Could not update role: ' . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'toggle_suspend') {
+        $targetId = (int) ($_POST['id'] ?? 0);
+        $suspend = (string) ($_POST['suspend'] ?? '1') === '1';
+
+        if ($targetId <= 0) {
+            $error = 'Invalid user selected.';
+        } elseif ($targetId === $currentUserId && $suspend) {
+            $error = 'You cannot suspend your own currently logged-in account.';
+        } else {
+            try {
+                admin_set_user_suspended($pdo, $schema, $targetId, $suspend);
+                $message = $suspend ? 'User account suspended.' : 'User account activated.';
+            } catch (Throwable $e) {
+                $error = 'Could not update account status: ' . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'delete') {
+        $targetId = (int) ($_POST['id'] ?? 0);
+
+        if ($targetId <= 0) {
+            $error = 'Invalid user selected.';
+        } elseif ($targetId === $currentUserId) {
+            $error = 'You cannot delete your own currently logged-in account.';
+        } else {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+                $stmt->execute([$targetId]);
+                $message = 'User deleted successfully.';
+            } catch (Throwable $e) {
+                $error = 'Could not delete user: ' . $e->getMessage();
+            }
+        }
+    }
+}
+
+$users = [];
+try {
+    $users = $pdo->query("SELECT * FROM users ORDER BY id DESC")->fetchAll();
+} catch (Throwable $e) {
+    $error = $error ?: ('Could not load users: ' . $e->getMessage());
+}
+
+admin_render_start('users.php', 'Users');
+?>
+
+<?php if ($message !== ''): ?>
+    <div class="alert ok"><?= admin_h($message) ?></div>
+<?php endif; ?>
+<?php if ($error !== ''): ?>
+    <div class="alert"><?= admin_h($error) ?></div>
+<?php endif; ?>
+
+<div class="bar">
+    <input type="text" id="adminSearchInput" class="inp" placeholder="Search users by name, email, or role...">
+    <button type="button" class="btn" onclick="AdminUI.openModal('addUserModal')">+ Add User</button>
+</div>
+
+<div class="card tw">
+    <table>
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="adminFilterBody">
+        <?php if (!empty($users)): ?>
+            <?php foreach ($users as $u): ?>
+                <?php
+                $uid = (int) ($u['id'] ?? 0);
+                $uName = (string) ($u['full_name'] ?? $u['name'] ?? 'User');
+                $uEmail = (string) ($u['email'] ?? '');
+                $rawRole = strtolower((string) ($u[$roleCol] ?? $u['role'] ?? $u['user_role'] ?? 'student'));
+                $isSuspended = admin_user_is_suspended($u, $schema) || $rawRole === 'suspended';
+                $displayRole = $rawRole === 'suspended' ? 'student' : $rawRole;
+                $isSelf = ($uid > 0 && $uid === $currentUserId);
+                ?>
+                <tr data-filter-row data-search="<?= admin_h($uName . ' ' . $uEmail . ' ' . $displayRole . ' ' . ($isSuspended ? 'suspended' : 'active')) ?>">
+                    <td><b><?= admin_h($uName) ?></b></td>
+                    <td class="meta"><?= admin_h($uEmail) ?></td>
+                    <td>
+                        <form method="POST" style="display:inline-flex;align-items:center;gap:6px">
+                            <input type="hidden" name="action" value="update_role">
+                            <input type="hidden" name="id" value="<?= $uid ?>">
+                            <select name="role" class="inp" style="width:auto;padding:5px 8px" onchange="this.form.submit()" <?= $isSelf ? 'disabled title="Cannot change own role here"' : '' ?>>
+                                <?php foreach (['student' => 'Student', 'moderator' => 'Moderator', 'admin' => 'Admin'] as $rVal => $rLabel): ?>
+                                    <option value="<?= $rVal ?>" <?= $displayRole === $rVal ? 'selected' : '' ?>>
+                                        <?= $rLabel ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
+                    </td>
+                    <td>
+                        <?php if ($isSuspended): ?>
+                            <span class="pill am">Suspended</span>
                         <?php else: ?>
-                            <tr><td colspan="5">No users found matching your filter.</td></tr>
+                            <span class="pill ok">Active</span>
                         <?php endif; ?>
-                    </tbody>
-                </table>
+                    </td>
+                    <td style="white-space:nowrap;display:inline-flex;gap:6px">
+                        <form method="POST" style="display:inline">
+                            <input type="hidden" name="action" value="toggle_suspend">
+                            <input type="hidden" name="id" value="<?= $uid ?>">
+                            <input type="hidden" name="suspend" value="<?= $isSuspended ? '0' : '1' ?>">
+                            <button type="submit" class="btn o s" <?= $isSelf ? 'disabled title="Cannot suspend own account"' : '' ?>>
+                                <?= $isSuspended ? 'Activate' : 'Suspend' ?>
+                            </button>
+                        </form>
+
+                        <form method="POST" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="id" value="<?= $uid ?>">
+                            <button type="submit" class="btn r s" <?= $isSelf ? 'disabled title="Cannot delete own account"' : '' ?>>
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <tr><td colspan="5" class="meta">No users found.</td></tr>
+        <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
+<div class="mod" id="addUserModal">
+    <div class="card">
+        <h3 style="font-family:Inter;margin-bottom:8px">Add New User</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="create">
+
+            <label for="userName">Full Name</label>
+            <input type="text" id="userName" name="name" class="inp" placeholder="e.g. Nimal Perera" required>
+
+            <label for="userEmail">Email Address</label>
+            <input type="email" id="userEmail" name="email" class="inp" placeholder="e.g. nimal@students.nsbm.ac.lk" required>
+
+            <label for="userPassword">Password (min 6 characters)</label>
+            <input type="password" id="userPassword" name="password" class="inp" minlength="6" required>
+
+            <label for="userRole">Role</label>
+            <select id="userRole" name="role" class="inp">
+                <option value="student">Student</option>
+                <option value="moderator">Moderator</option>
+                <option value="admin">Admin</option>
+            </select>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                <button type="button" class="btn o" onclick="AdminUI.closeModal('addUserModal')">Cancel</button>
+                <button type="submit" class="btn">Save User</button>
             </div>
-        </div>
-    </main>
-
-    <!-- Add New User Popup Modal -->
-    <div class="modal-backdrop" id="userModal">
-        <div class="modal-box" style="max-width: 480px;">
-            <div class="modal-header">
-                <h2>Add New User</h2>
-                <button type="button" class="btn btn-outline btn-sm" onclick="closeUserModal()">✕</button>
-            </div>
-
-            <form method="POST" action="users.php" onsubmit="return validateUserForm()">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
-                <input type="hidden" name="action" value="add_user">
-
-                <div class="form-group">
-                    <label for="userName">Full Name *</label>
-                    <input type="text" name="name" id="userName" class="form-control" placeholder="e.g., Kasun Silva" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="userEmail">University Email *</label>
-                    <input type="email" name="email" id="userEmail" class="form-control" placeholder="e.g., kasun@students.nsbm.ac.lk" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="userPassword">Initial Password (Min. 6 characters) *</label>
-                    <input type="password" name="password" id="userPassword" class="form-control" minlength="6" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="userRole">Account Role *</label>
-                    <select name="role" id="userRole" class="form-control">
-                        <option value="student">Student</option>
-                        <option value="moderator">Moderator</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
-
-                <div style="margin-bottom: 20px;">
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" checked> Activate account immediately
-                    </label>
-                </div>
-
-                <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                    <button type="button" class="btn btn-outline" onclick="closeUserModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create User</button>
-                </div>
-            </form>
-        </div>
+        </form>
     </div>
+</div>
 
-    <script src="../../assets/js/admin.js?v=6"></script>
-</body>
-</html>
+<?php admin_render_end(false); ?>
