@@ -529,3 +529,15 @@ tr:last-child td {
         display: inline-flex;
     }
 }
+
+/* Make table title/cell bold tags render in clean normal font weight */
+table td b,
+table td strong,
+.admin-table td b,
+.admin-table td strong,
+.data-table td b,
+.data-table td strong,
+#adminFilterBody td b,
+#adminFilterBody td strong {
+    font-weight: 400 !important;
+}

@@ -7,6 +7,29 @@ require_once dirname(__DIR__, 2) . '/backend/config/database.php';
 $message = '';
 $error = '';
 
+/**
+ * Inspect existing columns of `articles` table so optional columns like `published_at` never cause errors.
+ *
+ * @return array<string, bool>
+ */
+function admin_articles_columns(PDO $pdo): array
+{
+    $cols = [];
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM articles");
+        foreach ($stmt->fetchAll() as $row) {
+            if (!empty($row['Field'])) {
+                $cols[(string) $row['Field']] = true;
+            }
+        }
+    } catch (Throwable $e) {
+        // Fallback if SHOW COLUMNS is restricted
+    }
+    return $cols;
+}
+
+$articleCols = admin_articles_columns($pdo);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string) ($_POST['action'] ?? '');
 
@@ -15,21 +38,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $summary = trim((string) ($_POST['summary'] ?? ''));
         $content = trim((string) ($_POST['content'] ?? ''));
         $categoryId = (int) ($_POST['category_id'] ?? 0);
-        $status = trim((string) ($_POST['status'] ?? 'draft'));
+        $status = strtolower(trim((string) ($_POST['status'] ?? 'pending')));
         $authorId = (int) ($_SESSION['user_id'] ?? 1);
+
+        if (!in_array($status, ['pending', 'published', 'draft'], true)) {
+            $status = 'pending';
+        }
 
         if ($title === '') {
             $error = 'Article title is required.';
         } else {
             try {
-                $stmt = $pdo->prepare("
-                    INSERT INTO articles (title, summary, content, category_id, author_id, status, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, NOW())
-                ");
-                $stmt->execute([$title, $summary, $content ?: $summary, $categoryId ?: null, $authorId, strtolower($status)]);
+                $insertCols = ['title', 'category_id', 'status', 'created_at'];
+                $placeholders = ['?', '?', '?', 'NOW()'];
+                $params = [$title, $categoryId ?: null, $status];
+
+                if (isset($articleCols['summary'])) {
+                    $insertCols[] = 'summary';
+                    $placeholders[] = '?';
+                    $params[] = $summary;
+                }
+                if (isset($articleCols['content'])) {
+                    $insertCols[] = 'content';
+                    $placeholders[] = '?';
+                    $params[] = $content !== '' ? $content : $summary;
+                }
+                if (isset($articleCols['author_id'])) {
+                    $insertCols[] = 'author_id';
+                    $placeholders[] = '?';
+                    $params[] = $authorId > 0 ? $authorId : null;
+                }
+                if (isset($articleCols['published_at']) && $status === 'published') {
+                    $insertCols[] = 'published_at';
+                    $placeholders[] = 'NOW()';
+                }
+
+                $sql = sprintf(
+                    "INSERT INTO articles (%s) VALUES (%s)",
+                    implode(', ', $insertCols),
+                    implode(', ', $placeholders)
+                );
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
                 $message = 'News article created.';
             } catch (Throwable $e) {
                 $error = 'Could not save article: ' . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'publish') {
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id > 0) {
+            try {
+                if (isset($articleCols['published_at'])) {
+                    $stmt = $pdo->prepare("UPDATE articles SET status = 'published', published_at = COALESCE(published_at, NOW()) WHERE id = ?");
+                } else {
+                    $stmt = $pdo->prepare("UPDATE articles SET status = 'published' WHERE id = ?");
+                }
+                $stmt->execute([$id]);
+                $message = 'Article published successfully.';
+            } catch (Throwable $e) {
+                $error = 'Could not publish article: ' . $e->getMessage();
             }
         }
     } elseif ($action === 'delete') {
@@ -75,6 +143,7 @@ admin_render_start('news.php', 'News Management');
     <input type="text" id="adminSearchInput" class="inp" placeholder="Search articles...">
     <select id="adminStatusFilter" class="inp" style="width:auto">
         <option value="">All Status</option>
+        <option value="pending">Pending</option>
         <option value="published">Published</option>
         <option value="draft">Draft</option>
     </select>
@@ -101,19 +170,31 @@ admin_render_start('news.php', 'News Management');
         <tbody id="adminFilterBody">
         <?php if (!empty($articles)): ?>
             <?php foreach ($articles as $art): ?>
-                <?php $st = strtolower((string) ($art['status'] ?? 'draft')); ?>
+                <?php
+                $aid = (int) ($art['id'] ?? 0);
+                $st = strtolower((string) ($art['status'] ?? 'pending'));
+                $pillClass = $st === 'published' ? 'ok' : 'am';
+                ?>
                 <tr data-filter-row
-                    data-search="<?= admin_h($art['title'] ?? '') ?>"
+                    data-search="<?= admin_h(($art['title'] ?? '') . ' ' . ($art['category_name'] ?? '')) ?>"
                     data-status="<?= admin_h($st) ?>"
                     data-category="<?= admin_h($art['category_name'] ?? '') ?>">
                     <td><b><?= admin_h($art['title'] ?? '') ?></b></td>
                     <td><?= admin_h($art['category_name'] ?? 'General') ?></td>
-                    <td><span class="pill <?= $st === 'published' ? 'ok' : 'am' ?>"><?= admin_h(ucfirst($st)) ?></span></td>
+                    <td><span class="pill <?= $pillClass ?>"><?= admin_h(ucfirst($st)) ?></span></td>
                     <td><?= admin_h(!empty($art['created_at']) ? date('d M Y', strtotime((string) $art['created_at'])) : '—') ?></td>
-                    <td>
+                    <td style="white-space:nowrap;display:inline-flex;gap:6px">
+                        <?php if ($st !== 'published'): ?>
+                            <form method="POST" style="display:inline">
+                                <input type="hidden" name="action" value="publish">
+                                <input type="hidden" name="id" value="<?= $aid ?>">
+                                <button type="submit" class="btn s">Publish</button>
+                            </form>
+                        <?php endif; ?>
+
                         <form method="POST" style="display:inline" onsubmit="return confirm('Delete this article?');">
                             <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="id" value="<?= (int) ($art['id'] ?? 0) ?>">
+                            <input type="hidden" name="id" value="<?= $aid ?>">
                             <button type="submit" class="btn r s">Delete</button>
                         </form>
                     </td>
@@ -150,6 +231,7 @@ admin_render_start('news.php', 'News Management');
 
             <label>Status</label>
             <select name="status" class="inp">
+                <option value="pending">Pending</option>
                 <option value="published">Published</option>
                 <option value="draft">Draft</option>
             </select>
