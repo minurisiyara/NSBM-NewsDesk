@@ -1,440 +1,293 @@
-
 <?php
-require_once __DIR__ . '/../../backend/config/session.php';
-require_once __DIR__ . '/../../backend/config/database.php';
+declare(strict_types=1);
 
-if (
-    empty($_SESSION['user_id']) ||
-    ($_SESSION['user_role'] ?? '') !== 'admin'
-) {
-    header('Location: ../auth/login.php');
-    exit;
-}
+require_once dirname(__DIR__, 2) . '/components/admin-layout.php';
+require_once dirname(__DIR__, 2) . '/backend/config/database.php';
 
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
+$message = '';
 $error = '';
 
-if (
-    $_SERVER['REQUEST_METHOD'] === 'POST' &&
-    isset($_POST['save_announcement'])
-) {
-    $token = $_POST['csrf_token'] ?? '';
+/**
+ * Inspect `announcements` columns dynamically.
+ *
+ * @return array<string, bool>
+ */
+function admin_announcements_columns(PDO $pdo): array
+{
+    $cols = [];
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM announcements");
+        foreach ($stmt->fetchAll() as $row) {
+            if (!empty($row['Field'])) {
+                $cols[(string) $row['Field']] = true;
+            }
+        }
+    } catch (Throwable $e) {
+        // Ignore if restricted
+    }
+    return $cols;
+}
 
-    if (!is_string($token) ||
-        !hash_equals($_SESSION['csrf_token'], $token)) {
-        http_response_code(403);
-        exit('Invalid form token.');
+/**
+ * Resolve a valid user ID from `users` table so fk_announcements_creator never fails.
+ */
+function admin_resolve_creator_id(PDO $pdo): int
+{
+    $sessionUserId = (int) ($_SESSION['user_id'] ?? 0);
+    if ($sessionUserId > 0) {
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE id = ? LIMIT 1");
+        $stmt->execute([$sessionUserId]);
+        $found = (int) $stmt->fetchColumn();
+        if ($found > 0) {
+            return $found;
+        }
     }
 
-    $title = trim($_POST['title'] ?? '');
-    $content = trim($_POST['content'] ?? '');
-    $status = $_POST['status'] ?? 'draft';
+    $adminId = (int) $pdo->query("SELECT id FROM users WHERE LOWER(role) = 'admin' ORDER BY id ASC LIMIT 1")->fetchColumn();
+    if ($adminId > 0) {
+        return $adminId;
+    }
 
-    if ($title === '' || $content === '') {
-        $error = 'Title and content are required.';
-    } elseif (mb_strlen($title) > 255) {
-        $error = 'Title is too long.';
-    } elseif (!in_array($status, ['draft', 'published', 'archived'], true)) {
-        $error = 'Invalid status.';
-    } else {
-        try {
-            $stmt = $pdo->prepare("
-                INSERT INTO announcements
-                (title, content, status, created_by, published_at)
-                VALUES
-                (:title, :content, :status, :created_by, :published_at)
-            ");
+    return (int) $pdo->query("SELECT id FROM users ORDER BY id ASC LIMIT 1")->fetchColumn();
+}
 
-            $stmt->execute([
-                'title' => $title,
-                'content' => $content,
-                'status' => $status,
-                'created_by' => (int) $_SESSION['user_id'],
-                'published_at' => $status === 'published'
-                    ? date('Y-m-d H:i:s')
-                    : null
-            ]);
+$cols = admin_announcements_columns($pdo);
+$bodyCol = isset($cols['content']) ? 'content' : (isset($cols['description']) ? 'description' : 'body');
+$dateCol = isset($cols['event_date']) ? 'event_date' : 'created_at';
 
-            header('Location: announcements.php');
-            exit;
-        } catch (PDOException $e) {
-            error_log('Announcement insert failed: ' . $e->getMessage());
-            $error = 'Unable to save announcement.';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = (string) ($_POST['action'] ?? '');
+
+    if ($action === 'create') {
+        $title = trim((string) ($_POST['title'] ?? ''));
+        $body = trim((string) ($_POST['description'] ?? ''));
+        $date = trim((string) ($_POST['event_date'] ?? date('Y-m-d')));
+
+        if ($title === '') {
+            $error = 'Announcement title is required.';
+        } else {
+            try {
+                $creatorId = admin_resolve_creator_id($pdo);
+                if ($creatorId <= 0) {
+                    throw new RuntimeException('No valid user found in users table for created_by.');
+                }
+
+                $insertCols = ['title', $bodyCol, $dateCol];
+                $placeholders = ['?', '?', '?'];
+                $params = [$title, $body, $date !== '' ? $date : date('Y-m-d')];
+
+                if (isset($cols['created_by'])) {
+                    $insertCols[] = 'created_by';
+                    $placeholders[] = '?';
+                    $params[] = $creatorId;
+                }
+
+                if (isset($cols['is_active'])) {
+                    $insertCols[] = 'is_active';
+                    $placeholders[] = '?';
+                    $params[] = 1;
+                }
+
+                $sql = sprintf(
+                    "INSERT INTO announcements (%s) VALUES (%s)",
+                    implode(', ', $insertCols),
+                    implode(', ', $placeholders)
+                );
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+
+                $message = 'Announcement added successfully.';
+            } catch (Throwable $e) {
+                $error = 'Could not add announcement: ' . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'update') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $title = trim((string) ($_POST['title'] ?? ''));
+        $body = trim((string) ($_POST['description'] ?? ''));
+        $date = trim((string) ($_POST['event_date'] ?? date('Y-m-d')));
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
+
+        if ($id <= 0 || $title === '') {
+            $error = 'Announcement ID and title are required.';
+        } else {
+            try {
+                $sets = ["title = ?", "{$bodyCol} = ?", "{$dateCol} = ?"];
+                $params = [$title, $body, $date !== '' ? $date : date('Y-m-d')];
+
+                if (isset($cols['is_active'])) {
+                    $sets[] = "is_active = ?";
+                    $params[] = $isActive;
+                }
+
+                $params[] = $id;
+                $sql = "UPDATE announcements SET " . implode(', ', $sets) . " WHERE id = ?";
+                $pdo->prepare($sql)->execute($params);
+
+                $message = 'Announcement updated successfully.';
+            } catch (Throwable $e) {
+                $error = 'Could not update announcement: ' . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'delete') {
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id > 0) {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM announcements WHERE id = ?");
+                $stmt->execute([$id]);
+                $message = 'Announcement deleted.';
+            } catch (Throwable $e) {
+                $error = 'Could not delete announcement: ' . $e->getMessage();
+            }
         }
     }
 }
 
-if (
-    $_SERVER['REQUEST_METHOD'] === 'POST' &&
-    ($_POST['action'] ?? '') === 'delete'
-) {
-    $token = $_POST['csrf_token'] ?? '';
-
-    if (
-        !is_string($token) ||
-        !hash_equals($_SESSION['csrf_token'], $token)
-    ) {
-        http_response_code(403);
-        exit('Invalid form token.');
-    }
-
-    $id = filter_var(
-        $_POST['announcement_id'] ?? null,
-        FILTER_VALIDATE_INT,
-        ['options' => ['min_range' => 1]]
-    );
-
-    if (!$id) {
-        $error = 'Invalid announcement ID.';
-    } else {
-        try {
-            $stmt = $pdo->prepare(
-                "DELETE FROM announcements WHERE id = :id"
-            );
-
-            $stmt->execute(['id' => $id]);
-
-            header('Location: announcements.php');
-            exit;
-        } catch (PDOException $e) {
-            error_log('Announcement delete failed: ' . $e->getMessage());
-            $error = 'Unable to delete announcement.';
-        }
-    }
+$announcements = [];
+try {
+    $announcements = $pdo->query("SELECT * FROM announcements ORDER BY id DESC")->fetchAll();
+} catch (Throwable $e) {
+    $error = $error ?: ('Could not load announcements: ' . $e->getMessage());
 }
 
-$stmt = $pdo->query("
-    SELECT id, title, content, status, created_at
-    FROM announcements
-    ORDER BY created_at DESC, id DESC
-");
-
-$announcements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+admin_render_start('announcements.php', 'Announcements');
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Announcements | NSBM NewsDesk</title>
+<?php if ($message !== ''): ?><div class="alert ok"><?= admin_h($message) ?></div><?php endif; ?>
+<?php if ($error !== ''): ?><div class="alert"><?= admin_h($error) ?></div><?php endif; ?>
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f5f8f5;
-            color: #1f2937;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 40px auto;
-            padding: 20px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-bottom: 25px;
-        }
-
-        h1 {
-            color: #14532d;
-        }
-
-        button {
-            border: none;
-            padding: 10px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .add-btn {
-            background: #166534;
-            color: white;
-        }
-
-        .edit-btn {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .delete-btn {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px #00000010;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        th {
-            background: #e8f5e9;
-            color: #14532d;
-        }
-
-        .status {
-            padding: 6px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-        }
-
-        .published {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .draft {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .archived {
-            background: #e5e7eb;
-            color: #374151;
-        }
-
-        .search {
-            padding: 11px;
-            width: 100%;
-            max-width: 350px;
-            margin-bottom: 20px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: #00000080;
-            justify-content: center;
-            align-items: center;
-            padding: 15px;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            width: 100%;
-            max-width: 450px;
-        }
-
-        input, textarea, select {
-            width: 100%;
-            padding: 10px;
-            margin: 8px 0 15px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-        }
-
-        textarea {
-            min-height: 100px;
-        }
-
-        .save-btn {
-            background: #166534;
-            color: white;
-        }
-
-        .cancel-btn {
-            background: #e5e7eb;
-        }
-    </style>
-</head>
-
-<body>
-
-<div class="container">
-
-    <div class="header">
-        <div>
-            <h1>Manage Announcements</h1>
-            <p>Create and manage campus announcements</p>
-        </div>
-
-        <button class="add-btn" onclick="openModal()">
-            + Add Announcement
-        </button>
-    </div>
-
-    <input
-        type="text"
-        class="search"
-        id="searchInput"
-        placeholder="Search announcements..."
-        onkeyup="searchAnnouncements()"
-    >
-
-    <div class="table-wrapper">
-        <table id="announcementTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Status</th>
-                    <th>Created Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                <?php foreach ($announcements as $item): ?>
-                <tr>
-                    <td><?= (int) $item['id'] ?></td>
-
-                    <td>
-                        <?= htmlspecialchars($item['title']) ?>
-                    </td>
-
-                    <td>
-                        <span class="status <?= htmlspecialchars($item['status']) ?>">
-                            <?= ucfirst(htmlspecialchars($item['status'])) ?>
-                        </span>
-                    </td>
-
-                    <td><?= htmlspecialchars($item['created_at']) ?></td>
-
-                    <td>
-                        <button class="edit-btn" onclick="openModal()">
-                            Edit
-                        </button>
-
-                        
-<form method="POST" style="display:inline"
-      onsubmit="return confirm('Are you sure you want to delete this announcement?')">
-
-    <input type="hidden" name="csrf_token"
-           value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
-
-    <input type="hidden" name="action" value="delete">
-
-    <input type="hidden" name="announcement_id"
-           value="<?= (int) $item['id'] ?>">
-
-    <button type="submit" class="delete-btn">
-        Delete
-    </button>
-</form>
-
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-
+<div class="bar">
+    <button type="button" class="btn" onclick="AdminUI.openModal('addAnnModal')">+ Add Announcement</button>
 </div>
 
-<div class="modal" id="announcementModal">
-    <div class="modal-content">
+<div class="card tw">
+    <table>
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>Details</th>
+            <th>Date</th>
+            <?php if (isset($cols['is_active'])): ?>
+                <th>Status</th>
+            <?php endif; ?>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php if (!empty($announcements)): ?>
+            <?php foreach ($announcements as $a): ?>
+                <?php
+                $aid = (int) ($a['id'] ?? 0);
+                $aTitle = (string) ($a['title'] ?? '');
+                $desc = (string) ($a['content'] ?? $a['description'] ?? $a['body'] ?? '');
+                $rawDate = (string) ($a['event_date'] ?? $a['created_at'] ?? '');
+                $inputDate = $rawDate !== '' ? date('Y-m-d', strtotime($rawDate)) : date('Y-m-d');
+                $active = (int) ($a['is_active'] ?? 1) === 1;
+                ?>
+                <tr>
+                    <td><b><?= admin_h($aTitle) ?></b></td>
+                    <td class="meta"><?= admin_h($desc) ?></td>
+                    <td><?= admin_h($rawDate !== '' ? date('d M Y', strtotime($rawDate)) : '—') ?></td>
+                    <?php if (isset($cols['is_active'])): ?>
+                        <td>
+                            <span class="pill <?= $active ? 'ok' : 'am' ?>">
+                                <?= $active ? 'Active' : 'Inactive' ?>
+                            </span>
+                        </td>
+                    <?php endif; ?>
+                    <td style="white-space:nowrap;display:inline-flex;gap:6px">
+                        <button type="button"
+                                class="btn o s"
+                                data-id="<?= $aid ?>"
+                                data-title="<?= admin_h($aTitle) ?>"
+                                data-desc="<?= admin_h($desc) ?>"
+                                data-date="<?= admin_h($inputDate) ?>"
+                                data-active="<?= $active ? '1' : '0' ?>"
+                                onclick="openEditAnnouncement(this)">
+                            Edit
+                        </button>
+                        <form method="POST" style="display:inline" onsubmit="return confirm('Delete this announcement?');">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="id" value="<?= $aid ?>">
+                            <button type="submit" class="btn r s">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <tr><td colspan="<?= isset($cols['is_active']) ? 5 : 4 ?>" class="meta">No announcements found.</td></tr>
+        <?php endif; ?>
+        </tbody>
+    </table>
+</div>
 
-        
-<form method="POST" action="">
+<!-- Add Modal -->
+<div class="mod" id="addAnnModal">
+    <div class="card">
+        <h3 style="font-family:Inter;margin-bottom:8px">Add Announcement</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="create">
+            <label>Title</label>
+            <input type="text" name="title" class="inp" required>
 
-    <input type="hidden" name="csrf_token"
-        value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+            <label>Date</label>
+            <input type="date" name="event_date" class="inp" value="<?= date('Y-m-d') ?>">
 
-    <input type="hidden" name="announcement_id" id="announcementId">
+            <label>Description</label>
+            <textarea name="description" class="inp" rows="3"></textarea>
 
-    <h3 id="modalHeading">Add Announcement</h3>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                <button type="button" class="btn o" onclick="AdminUI.closeModal('addAnnModal')">Cancel</button>
+                <button type="submit" class="btn">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    <label>Title</label>
-    <input type="text"
-           id="announcementTitle"
-           name="title"
-           maxlength="255"
-           required>
+<!-- Edit Modal -->
+<div class="mod" id="editAnnModal">
+    <div class="card">
+        <h3 style="font-family:Inter;margin-bottom:8px">Edit Announcement</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="update">
+            <input type="hidden" name="id" id="editAnnId">
 
-    <label>Content</label>
-    <textarea id="announcementContent"
-              name="content"
-              required></textarea>
+            <label>Title</label>
+            <input type="text" name="title" id="editAnnTitle" class="inp" required>
 
-    <label>Status</label>
-    <select id="announcementStatus" name="status">
-        <option value="draft">Draft</option>
-        <option value="published">Published</option>
-        <option value="archived">Archived</option>
-    </select>
+            <label>Date</label>
+            <input type="date" name="event_date" id="editAnnDate" class="inp">
 
-    <button type="submit"
-            name="save_announcement"
-            class="save-btn">
-        Save Announcement
-    </button>
+            <label>Description</label>
+            <textarea name="description" id="editAnnDesc" class="inp" rows="3"></textarea>
 
-    <button type="button"
-            class="cancel-btn"
-            onclick="closeModal()">
-        Cancel
-    </button>
+            <?php if (isset($cols['is_active'])): ?>
+                <div class="sw" style="margin-top:8px">
+                    <span>Active on Homepage</span>
+                    <input type="checkbox" name="is_active" id="editAnnActive" value="1">
+                </div>
+            <?php endif; ?>
 
-</form>
-
-
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                <button type="button" class="btn o" onclick="AdminUI.closeModal('editAnnModal')">Cancel</button>
+                <button type="submit" class="btn">Update</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
-    function openModal() {
-        document.getElementById('announcementModal')
-            .style.display = 'flex';
+function openEditAnnouncement(btn) {
+    document.getElementById('editAnnId').value = btn.dataset.id || '';
+    document.getElementById('editAnnTitle').value = btn.dataset.title || '';
+    document.getElementById('editAnnDate').value = btn.dataset.date || '';
+    document.getElementById('editAnnDesc').value = btn.dataset.desc || '';
+    const activeBox = document.getElementById('editAnnActive');
+    if (activeBox) {
+        activeBox.checked = btn.dataset.active === '1';
     }
-
-    function closeModal() {
-        document.getElementById('announcementModal')
-            .style.display = 'none';
-    }
-
-    function confirmDelete() {
-        if (confirm('Are you sure you want to delete this announcement?')) {
-            alert('Demo only: No announcement was deleted.');
-        }
-    }
-
-
-    function searchAnnouncements() {
-        const search = document.getElementById('searchInput')
-            .value.toLowerCase();
-
-        const rows = document.querySelectorAll(
-            '#announcementTable tbody tr'
-        );
-
-        rows.forEach(row => {
-            const title = row.cells[1].textContent.toLowerCase();
-
-            row.style.display = title.includes(search) ? '' : 'none';
-        });
-    }
+    AdminUI.openModal('editAnnModal');
+}
 </script>
 
-</body>
-</html>
+<?php admin_render_end(false); ?>
