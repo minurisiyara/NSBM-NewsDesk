@@ -204,3 +204,6 @@ CREATE TABLE IF NOT EXISTS moderation_logs (
 -- ('Events', 'Campus events and activities'),
 -- ('Sports', 'Sports news and results'),
 -- ('General', 'General campus news');
+
+
+
