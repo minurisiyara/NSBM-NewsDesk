@@ -1,240 +1,221 @@
-
 <?php
-// Temporary homepage news data
-$featuredNews = [
-    "category" => "Academic",
-    "title" => "NSBM Ranked Among Top 10 Private Universities in Sri Lanka",
-    "date" => "Sep 28, 2025",
-    "reading_time" => "3 min read",
-    "image" => "https://images.unsplash.com/photo-1562774053-701939374585?w=1200"
-];
+declare(strict_types=1);
 
-$latestNews = [
-    [
-        "category" => "Academic",
-        "title" => "NSBM opens a new chapter in AI research",
-        "description" => "A new research initiative brings students and industry experts together to shape the future of AI.",
-        "date" => "Sep 25, 2025",
-        "reading_time" => "4 min read",
-        "image" => "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800"
-    ],
-    [
-        "category" => "Sports",
-        "title" => "Green University cricketers lift the championship trophy",
-        "description" => "Team NSBM celebrates a memorable victory after an outstanding inter-university tournament.",
-        "date" => "Sep 24, 2025",
-        "reading_time" => "3 min read",
-        "image" => "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800"
-    ],
-    [
-        "category" => "Events",
-        "title" => "Innovation takes centre stage at Tech Expo 2025",
-        "description" => "Student-led ideas, live demonstrations and bold solutions make this year's showcase one to remember.",
-        "date" => "Sep 23, 2025",
-        "reading_time" => "5 min read",
-        "image" => "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800"
-    ]
-];
+require_once __DIR__ . '/../backend/config/database.php';
 
-$announcements = [
-    ["day" => "26", "month" => "SEP", "title" => "September convocation", "details" => "9:00 AM • Main Auditorium"],
-    ["day" => "27", "month" => "SEP", "title" => "Career Fair 2025", "details" => "10:00 AM • Student Centre"],
-    ["day" => "28", "month" => "SEP", "title" => "Inter-faculty sports meet", "details" => "8:00 AM • Sports Complex"],
-    ["day" => "29", "month" => "SEP", "title" => "Research symposium", "details" => "9:30 AM • Faculty of Computing"],
-    ["day" => "30", "month" => "SEP", "title" => "New intake orientation", "details" => "10:00 AM • University premises"]
-];
+function estimateReadingTime(?string $content): string {
+    $wordCount = str_word_count(strip_tags((string) $content));
+    $minutes = max(1, (int) ceil($wordCount / 200));
+    return $minutes . ' min read';
+}
+
+function resolveArticleImage(?string $imagePath, string $fallback): string {
+    $path = trim((string) $imagePath);
+    if ($path === '') {
+        return $fallback;
+    }
+    if (preg_match('#^https?://#i', $path) || str_starts_with($path, '../') || str_starts_with($path, '/')) {
+        return $path;
+    }
+    return '../' . ltrim($path, '/');
+}
+
+$defaultHeroImg = 'https://images.unsplash.com/photo-1562774053-701939374585?w=1200';
+$breakingNewsList = [];
+$featuredArticles = [];
+$latestArticles = [];
+$announcements = [];
+
+try {
+    $breakingStmt = $pdo->query("
+        SELECT id, title
+        FROM articles
+        WHERE status = 'published' AND is_breaking = 1
+        ORDER BY created_at DESC
+        LIMIT 10
+    ");
+    $breakingNewsList = $breakingStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $featuredStmt = $pdo->query("
+        SELECT a.id, a.title, a.content, a.image_path,
+               a.created_at AS display_date,
+               COALESCE(c.name, 'Academic') AS category_name
+        FROM articles a
+        LEFT JOIN categories c ON a.category_id = c.id
+        WHERE a.status = 'published'
+        ORDER BY a.is_featured DESC, a.created_at DESC
+        LIMIT 5
+    ");
+    $featuredArticles = $featuredStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $featuredIds = array_column($featuredArticles, 'id');
+    $excludeClause = !empty($featuredIds)
+        ? 'AND a.id NOT IN (' . implode(',', array_map('intval', $featuredIds)) . ')'
+        : '';
+
+    $latestStmt = $pdo->query("
+        SELECT a.id, a.title, a.summary, a.content, a.image_path,
+               a.created_at AS display_date,
+               COALESCE(c.name, 'General') AS category_name
+        FROM articles a
+        LEFT JOIN categories c ON a.category_id = c.id
+        WHERE a.status = 'published' {$excludeClause}
+        ORDER BY a.created_at DESC
+        LIMIT 6
+    ");
+    $latestArticles = $latestStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log('Homepage articles query error: ' . $e->getMessage());
+}
+
+try {
+    $annStmt = $pdo->query("
+        SELECT id, title, content, created_at
+        FROM announcements
+        WHERE is_active = 1
+        ORDER BY created_at DESC
+        LIMIT 5
+    ");
+    $announcements = $annStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log('Homepage announcements query error: ' . $e->getMessage());
+}
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Home | NSBM NewsDesk</title>
-
     <link rel="stylesheet" href="../assets/css/home.css">
+    <link rel="stylesheet" href="../assets/css/home-slider.css?v=2">
+    <link rel="stylesheet" href="../assets/css/style.css?v=6">
 </head>
-
 <body>
 
-<!-- Navigation Bar -->
-<header class="navbar">
+<?php include __DIR__ . '/../components/navbar.php'; ?>
 
-    <a href="home.php" class="logo">
-    <img src="../assets/images/nsbm-logo.png" alt="NSBM Green University Logo">
-    <span>NewsDesk</span>
-    </a>
-
-    <nav class="nav-links">
-        <a href="home.php" class="active">Home</a>
-        <a href="news.php">News</a>
-        <a href="news.php?category=Academic">Academic</a>
-        <a href="news.php?category=Sports">Sports</a>
-        <a href="news.php?category=Events">Events</a>
-        <a href="news.php?category=Gallery">Gallery</a>
-        <a href="#">About</a>
-    </nav>
-
-    <div class="nav-actions">
-        <form action="search.php" method="GET" class="search-form">
-            <input type="search" name="q" placeholder="Search news, events...">
-            <button type="submit">⌕</button>
-        </form>
-
-        <a href="auth/login.php" class="login-btn">Login</a>
-        <a href="auth/register.php" class="signup-btn">Sign Up</a>
-    </div>
-
-</header>
-
-<!-- Breaking News Ticker -->
 <section class="breaking-news">
     <strong>✦ BREAKING NEWS</strong>
-    <span>NSBM achieves top 10 in Sri Lanka's private university rankings...</span>
+    <div class="breaking-ticker-wrap">
+        <div class="breaking-ticker-track">
+            <?php if (!empty($breakingNewsList)): ?>
+                <?php for ($loop = 0; $loop < 2; $loop++): ?>
+                    <?php foreach ($breakingNewsList as $bNews): ?>
+                        <a href="article.php?id=<?= (int) $bNews['id'] ?>" class="breaking-ticker-item">
+                            <?= htmlspecialchars($bNews['title'], ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                        <span class="ticker-sep">•</span>
+                    <?php endforeach; ?>
+                <?php endfor; ?>
+            <?php else: ?>
+                <span class="breaking-ticker-item">NSBM achieves top 10 in Sri Lanka's private university rankings...</span>
+            <?php endif; ?>
+        </div>
+    </div>
 </section>
 
 <main class="main-container">
-
-    <!-- Date and Welcome Text -->
     <div class="welcome-row">
         <p>THE CAMPUS, CONNECTED.</p>
-        <span>Friday, September 28, 2025</span>
+        <span><?= date('l, F j, Y') ?></span>
     </div>
 
-    <!-- Featured News and Announcements -->
     <section class="featured-layout">
+        <div class="featured-slideshow" id="featuredSlideshow">
+            <?php if (!empty($featuredArticles)): ?>
+                <?php foreach ($featuredArticles as $index => $slide): ?>
+                    <?php
+                        $heroImage = resolveArticleImage($slide['image_path'] ?? '', $defaultHeroImg);
+                        $heroDate = date('M j, Y', strtotime($slide['display_date']));
+                        $heroReadTime = estimateReadingTime($slide['content'] ?? '');
+                    ?>
+                    <div class="featured-slide <?= $index === 0 ? 'is-active' : '' ?>"
+                         style="background-image: url('<?= htmlspecialchars($heroImage, ENT_QUOTES, 'UTF-8') ?>');">
+                        <div class="featured-content">
+                            <span class="category-label"><?= htmlspecialchars($slide['category_name'], ENT_QUOTES, 'UTF-8') ?></span>
+                            <h1><?= htmlspecialchars($slide['title'], ENT_QUOTES, 'UTF-8') ?></h1>
+                            <p><?= htmlspecialchars($heroDate, ENT_QUOTES, 'UTF-8') ?> • <?= htmlspecialchars($heroReadTime, ENT_QUOTES, 'UTF-8') ?></p>
+                            <a href="article.php?id=<?= (int) $slide['id'] ?>" class="read-story-btn">Read Full Story →</a>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
 
-        <!-- Featured Article -->
-        <div class="featured-news"
-             style="background-image: url('<?= htmlspecialchars($featuredNews['image']) ?>');">
+                <?php if (count($featuredArticles) > 1): ?>
+                    <button type="button" class="slide-nav-btn slide-prev" id="prevFeaturedBtn" aria-label="Previous slide">‹</button>
+                    <button type="button" class="slide-nav-btn slide-next" id="nextFeaturedBtn" aria-label="Next slide">›</button>
 
-            <div class="featured-content">
-
-                <span class="category-label">
-                    <?= htmlspecialchars($featuredNews['category']) ?>
-                </span>
-
-                <h1><?= htmlspecialchars($featuredNews['title']) ?></h1>
-
-                <p>
-                    <?= htmlspecialchars($featuredNews['date']) ?>
-                    •
-                    <?= htmlspecialchars($featuredNews['reading_time']) ?>
-                </p>
-
-                <a href="news.php" class="read-story-btn">
-                    Read Full Story →
-                </a>
-
-            </div>
+                    <div class="slide-dots" id="featuredDots">
+                        <?php foreach ($featuredArticles as $index => $slide): ?>
+                            <button type="button"
+                                    class="slide-dot <?= $index === 0 ? 'is-active' : '' ?>"
+                                    data-slide="<?= $index ?>"
+                                    aria-label="Go to slide <?= $index + 1 ?>"></button>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            <?php else: ?>
+                <div class="featured-slide is-active" style="background-image: url('<?= $defaultHeroImg ?>');">
+                    <div class="featured-content">
+                        <span class="category-label">Academic</span>
+                        <h1>NSBM Ranked Among Top 10 Private Universities in Sri Lanka</h1>
+                        <p><?= date('M j, Y') ?> • 3 min read</p>
+                        <a href="news.php" class="read-story-btn">Read Full Story →</a>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
 
-        <!-- Announcements -->
         <aside class="announcements">
-
             <div class="section-heading">
                 <h2>Announcements</h2>
                 <a href="news.php">View All</a>
             </div>
 
-            <?php foreach ($announcements as $announcement): ?>
-
-                <div class="announcement-item">
-
-                    <div class="date-box">
-                        <strong><?= htmlspecialchars($announcement['day']) ?></strong>
-                        <span><?= htmlspecialchars($announcement['month']) ?></span>
+            <?php if (!empty($announcements)): ?>
+                <?php foreach ($announcements as $announcement): ?>
+                    <?php
+                        $ts = strtotime($announcement['created_at']);
+                        $day = date('d', $ts);
+                        $month = strtoupper(date('M', $ts));
+                        $details = mb_strimwidth(strip_tags((string) $announcement['content']), 0, 50, '...');
+                    ?>
+                    <div class="announcement-item">
+                        <div class="date-box">
+                            <strong><?= htmlspecialchars($day, ENT_QUOTES, 'UTF-8') ?></strong>
+                            <span><?= htmlspecialchars($month, ENT_QUOTES, 'UTF-8') ?></span>
+                        </div>
+                        <div class="announcement-info">
+                            <h3><?= htmlspecialchars($announcement['title'], ENT_QUOTES, 'UTF-8') ?></h3>
+                            <p><?= htmlspecialchars($details, ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
                     </div>
-
-                    <div class="announcement-info">
-                        <h3><?= htmlspecialchars($announcement['title']) ?></h3>
-                        <p><?= htmlspecialchars($announcement['details']) ?></p>
-                    </div>
-
-                </div>
-
-            <?php endforeach; ?>
-
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p style="color: #6b7280; font-size: 14px;">No active announcements right now.</p>
+            <?php endif; ?>
         </aside>
-
     </section>
 
-    <!-- Latest News -->
     <section class="latest-section">
-
         <div class="section-heading latest-heading">
             <h2>Latest News</h2>
             <a href="news.php">View All News →</a>
         </div>
 
         <div class="latest-grid">
-
-            <?php foreach ($latestNews as $article): ?>
-
-                <article class="news-card">
-
-                    <img
-                        src="<?= htmlspecialchars($article['image']) ?>"
-                        alt="<?= htmlspecialchars($article['title']) ?>"
-                    >
-
-                    <div class="news-card-content">
-
-                        <span class="news-category">
-                            <?= htmlspecialchars($article['category']) ?>
-                        </span>
-
-                        <h3><?= htmlspecialchars($article['title']) ?></h3>
-
-                        <p><?= htmlspecialchars($article['description']) ?></p>
-
-                        <div class="news-card-footer">
-                            <span><?= htmlspecialchars($article['date']) ?></span>
-                            <span><?= htmlspecialchars($article['reading_time']) ?></span>
-                        </div>
-
-                    </div>
-
-                </article>
-
-            <?php endforeach; ?>
-
+            <?php if (!empty($latestArticles)): ?>
+                <?php foreach ($latestArticles as $article): ?>
+                    <?php include __DIR__ . '/../components/new-card.php'; ?>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p style="color: #6b7280; font-size: 14px;">No published news articles available yet.</p>
+            <?php endif; ?>
         </div>
-
     </section>
-
 </main>
 
-<!-- Footer -->
-<footer class="home-footer">
-
-    <div class="footer-about">
-        <h2>🍃 NSBM NewsDesk</h2>
-
-        <p>
-            Your window into life at NSBM Green University.
-            Stories, achievements and moments from our community.
-        </p>
-
-        <div class="footer-links">
-            <a href="#">Contact the newsroom ↗</a>
-            <a href="#">Submit a story ↗</a>
-        </div>
-
-        <small>© 2025 NSBM Green University. All rights reserved.</small>
-    </div>
-
-    <div class="quick-links">
-        <h3>🔗 Quick Links</h3>
-
-        <a href="#">🌐 University website ↗</a>
-        <a href="#">🎓 Student portal ↗</a>
-        <a href="#">📅 Academic calendar ↗</a>
-        <a href="#">📖 Digital library ↗</a>
-    </div>
-
-</footer>
-
+<?php include __DIR__ . '/../components/footer.php'; ?>
+<script src="../assets/js/home-slider.js?v=2"></script>
 </body>
 </html>

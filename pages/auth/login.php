@@ -40,9 +40,7 @@ unset($_SESSION['register_success']);
             </div>
         <?php endif; ?>
 
-        <form action="../../backend/auth/login.php"
-                 method="POST"
-                     id="loginForm">
+        <form action="../../backend/auth/login.php" method="POST">
             <input
                 type="hidden"
                 name="csrf_token"
@@ -70,9 +68,7 @@ unset($_SESSION['register_success']);
                 >
             </div>
 
-            <button type="submit" id="loginButton">
-                    Log In
-            </button>
+            <button type="submit">Log In</button>
         </form>
 
         <p>
@@ -80,7 +76,6 @@ unset($_SESSION['register_success']);
             <a href="register.php">Create an account</a>
         </p>
     </main>
-    <script src="../../assets/js/auth.js"></script>
 
 </body>
 </html>
