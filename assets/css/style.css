@@ -1,0 +1,236 @@
+
+/* ============================================
+   NSBM NEWSDESK
+   SHARED DESIGN SYSTEM
+   ============================================ */
+
+/* 1. GOOGLE FONTS */
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Source+Sans+3:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap');
+
+
+/* 2. GLOBAL DESIGN VARIABLES */
+:root {
+    /* Brand colours */
+    --color-primary: #0B7658;
+    --color-primary-dark: #075C46;
+    --color-primary-light: #EAF3ED;
+    --color-accent-blue: #123D69;
+
+    /* Backgrounds */
+    --color-canvas: #FAFAF7;
+    --color-surface: #FFFFFF;
+    --color-surface-muted: #F3F4EF;
+
+    /* Text */
+    --color-text: #202722;
+    --color-text-muted: #68736C;
+    --color-text-light: #A1AAA3;
+
+    /* Borders */
+    --color-border: #E5E8E3;
+    --color-border-strong: #D3DAD2;
+
+    /* Status colours */
+    --color-success: #237A50;
+    --color-warning: #A66B1F;
+    --color-danger: #B54747;
+
+    /* Typography */
+    --font-heading: 'Newsreader', Georgia, serif;
+    --font-body: 'Source Sans 3', Arial, sans-serif;
+    --font-ui: 'Work Sans', Arial, sans-serif;
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 48px;
+
+    /* Corners */
+    --radius-sm: 3px;
+    --radius-md: 6px;
+    --radius-lg: 10px;
+
+    /* Shadows */
+    --shadow-soft: 0 2px 12px rgba(20, 40, 30, 0.05);
+}
+
+
+/* 3. GLOBAL RESET */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--color-canvas);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+
+/* 4. TYPOGRAPHY */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin-top: 0;
+    color: var(--color-text);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: clamp(28px, 4vw, 42px);
+}
+
+h2 {
+    font-size: clamp(24px, 3vw, 32px);
+}
+
+h3 {
+    font-size: 22px;
+}
+
+p {
+    margin-top: 0;
+}
+
+small {
+    font-size: 12px;
+}
+
+
+/* 5. LINKS */
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--color-primary-dark);
+}
+
+
+/* 6. FORM ELEMENTS */
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+input,
+select,
+textarea {
+    color: var(--color-text);
+}
+
+
+/* 7. IMAGES */
+img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+
+/* 8. REUSABLE BUTTONS */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: #FFFFFF;
+}
+
+.btn-primary:hover {
+    background: var(--color-primary-dark);
+    color: #FFFFFF;
+}
+
+.btn-outline {
+    border-color: var(--color-border-strong);
+    background: transparent;
+    color: var(--color-text);
+}
+
+.btn-outline:hover {
+    background: var(--color-surface-muted);
+}
+
+
+/* 9. REUSABLE SURFACES */
+.surface {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-soft);
+}
+
+
+/* 10. UTILITY CLASSES */
+.text-muted {
+    color: var(--color-text-muted);
+}
+
+.text-primary {
+    color: var(--color-primary);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.container {
+    width: min(100% - 40px, 1440px);
+    margin-inline: auto;
+}
+
+
+/* 11. ACCESSIBILITY */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+}
+
+
+/* 12. RESPONSIVE BASICS */
+@media (max-width: 768px) {
+    .container {
+        width: min(100% - 24px, 1440px);
+    }
+}
