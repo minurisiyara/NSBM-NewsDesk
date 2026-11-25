@@ -81,7 +81,7 @@ try {
 if ($user['role'] === 'admin') {
     header('Location: ../../pages/admin/dashboard.php');
 } elseif ($user['role'] === 'moderator') {
-    header('Location: ../../backend/news/read.php');
+    header('Location: ../../pages/moderator/approvals.php');
 } else {
     header('Location: ../../pages/student/dashboard.php');
 }
