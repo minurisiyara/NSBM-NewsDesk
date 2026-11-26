@@ -152,76 +152,107 @@ if ($userRole === 'student') {
 
 if ($userRole === 'moderator') {
     if ((int) $article['author_id'] === $userId) {
-        http_response_code(403);
-        exit('You cannot review your own article.');
+        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('You cannot review your own article.'));
+        exit;
     }
 
     if ($article['status'] !== 'pending') {
-        http_response_code(409);
-        exit('Only pending articles can be reviewed.');
+        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('Only pending articles can be reviewed.'));
+        exit;
     }
-
 
     $action = $_POST['action'] ?? '';
 
     if (!is_string($action) || !in_array($action, ['approve', 'reject'], true)) {
-        http_response_code(422);
-        exit('Choose approve or reject.');
+        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('Choose approve or reject.'));
+        exit;
     }
 
-$rejectionReason = trim($_POST['rejection_reason'] ?? '');
+    $rejectionReason = trim($_POST['rejection_reason'] ?? '');
 
-if (mb_strlen($rejectionReason) > 2000) {
-    http_response_code(422);
-    exit('Rejection reason must not exceed 2000 characters.');
-}
+    if (mb_strlen($rejectionReason) > 2000) {
+        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('Rejection reason must not exceed 2000 characters.'));
+        exit;
+    }
 
     if ($action === 'reject' && $rejectionReason === '') {
-        http_response_code(422);
-        exit('A rejection reason is required.');
+        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('A rejection reason is required.'));
+        exit;
     }
 
-    if ($action === 'approve') {
-        $updateQuery = $pdo->prepare(
-            "UPDATE articles
-             SET status = 'approved',
-                 rejection_reason = NULL,
-                 reviewed_by = :reviewer,
-                 reviewed_at = CURRENT_TIMESTAMP
-             WHERE id = :id AND status = 'pending'"
+    try {
+        $pdo->beginTransaction();
+
+        if ($action === 'approve') {
+            $updateQuery = $pdo->prepare(
+                "UPDATE articles
+                 SET status = 'approved',
+                     rejection_reason = NULL,
+                     reviewed_by = :reviewer,
+                     reviewed_at = CURRENT_TIMESTAMP
+                 WHERE id = :id AND status = 'pending'"
+            );
+
+            $updateQuery->execute([
+                'reviewer' => $userId,
+                'id' => $articleId,
+            ]);
+
+            $logAction = 'article_approved';
+            $logReason = null;
+            $successMsg = 'Article approved successfully.';
+        } else {
+            $updateQuery = $pdo->prepare(
+                "UPDATE articles
+                 SET status = 'rejected',
+                     rejection_reason = :reason,
+                     reviewed_by = :reviewer,
+                     reviewed_at = CURRENT_TIMESTAMP
+                 WHERE id = :id AND status = 'pending'"
+            );
+
+            $updateQuery->execute([
+                'reason' => $rejectionReason,
+                'reviewer' => $userId,
+                'id' => $articleId,
+            ]);
+
+            $logAction = 'article_rejected';
+            $logReason = $rejectionReason;
+            $successMsg = 'Article rejected and feedback recorded.';
+        }
+
+        if ($updateQuery->rowCount() !== 1) {
+            $pdo->rollBack();
+            header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('The article could not be updated. Refresh and try again.'));
+            exit;
+        }
+
+        // Record audit log entry.
+        $logQuery = $pdo->prepare(
+            'INSERT INTO moderation_logs (moderator_id, action, article_id, reason)
+             VALUES (:moderator_id, :action, :article_id, :reason)'
         );
-
-        $updateQuery->execute([
-            'reviewer' => $userId,
-            'id' => $articleId,
+        $logQuery->execute([
+            'moderator_id' => $userId,
+            'action'       => $logAction,
+            'article_id'   => $articleId,
+            'reason'       => $logReason,
         ]);
-    } else {
-        $updateQuery = $pdo->prepare(
-            "UPDATE articles
-             SET status = 'rejected',
-                 rejection_reason = :reason,
-                 reviewed_by = :reviewer,
-                 reviewed_at = CURRENT_TIMESTAMP
-             WHERE id = :id AND status = 'pending'"
-        );
 
-        $updateQuery->execute([
-            'reason' => $rejectionReason,
-            'reviewer' => $userId,
-            'id' => $articleId,
-        ]);
+        $pdo->commit();
+
+        header('Location: ../pages/moderator/approvals.php?success=' . rawurlencode($successMsg));
+        exit;
+
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        error_log('Article moderation failed: ' . $e->getMessage());
+        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('Unable to process article review. Please try again.'));
+        exit;
     }
-
-    if ($updateQuery->rowCount() !== 1) {
-        http_response_code(409);
-        exit('The article could not be updated. Refresh and try again.');
-    }
-
-    echo $action === 'approve'
-        ? 'Article approved. It still needs to be published.'
-        : 'Article rejected. The reason has been recorded.';
-
-    exit;
 }
 
 // Admin updates and publishing require a separate, explicit workflow.

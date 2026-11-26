@@ -61,6 +61,13 @@ $reviewedQuery = $pdo->prepare(
 $reviewedQuery->execute(['user_id' => $userId]);
 $reviewedToday = (int) $reviewedQuery->fetchColumn();
 
+$pendingReportsCount = (int) $pdo->query(
+    "SELECT COUNT(*) FROM content_reports WHERE status = 'pending'"
+)->fetchColumn();
+
+$successMessage = $_GET['success'] ?? '';
+$errorMessage = $_GET['error'] ?? '';
+
 // Fetch pending articles, excluding the moderator's own submissions.
 $articleQuery = $pdo->prepare(
     "SELECT
@@ -131,15 +138,16 @@ function e(string $value): string
                 <span class="nav-count"><?= $pendingCount ?></span>
             </a>
 
-            <a href="#comments" class="nav-link">
+            <a href="comments.php" class="nav-link">
                 <span>▧</span> Comments
             </a>
 
-            <a href="#reports" class="nav-link">
+            <a href="reports.php" class="nav-link">
                 <span>⚑</span> Reports
+                <span class="nav-count"><?= $pendingReportsCount ?></span>
             </a>
 
-            <a href="#activity" class="nav-link">
+            <a href="activity.php" class="nav-link">
                 <span>◷</span> Desk Activity
             </a>
         </nav>
@@ -201,6 +209,19 @@ function e(string $value): string
                     <?= e(date('l, d F Y')) ?>
                 </div>
             </section>
+
+            <!-- FEEDBACK MESSAGES -->
+            <?php if (is_string($successMessage) && $successMessage !== ''): ?>
+                <div class="moderation-message success-message">
+                    <?= e($successMessage) ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (is_string($errorMessage) && $errorMessage !== ''): ?>
+                <div class="moderation-message error-message">
+                    <?= e($errorMessage) ?>
+                </div>
+            <?php endif; ?>
 
             <!-- STATISTICS -->
             <section class="statistics-grid">
@@ -412,21 +433,7 @@ function e(string $value): string
 
             </section>
 
-            <!-- FUTURE SECTIONS -->
-            <section class="coming-soon-section" id="comments">
-                <h2>Comments Moderation</h2>
-                <p>Comment moderation will be implemented next.</p>
-            </section>
 
-            <section class="coming-soon-section" id="reports">
-                <h2>Content Reports</h2>
-                <p>Reported articles and comments will appear here.</p>
-            </section>
-
-            <section class="coming-soon-section" id="activity">
-                <h2>Desk Activity</h2>
-                <p>Your moderation history will appear here.</p>
-            </section>
 
         </div>
 
