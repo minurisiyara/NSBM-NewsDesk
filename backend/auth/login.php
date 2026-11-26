@@ -60,7 +60,7 @@ try {
     }
 
     // Do not establish a session for an unavailable role.
-    if (!in_array($user['role'], ['student', 'admin'], true)) {
+    if (!in_array($user['role'], ['student', 'moderator', 'admin'], true)) {
         $_SESSION['login_errors'] = [
             'Access for this account type is not available yet.'
         ];
@@ -78,13 +78,15 @@ try {
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_role'] = $user['role'];
 
-    if ($user['role'] === 'admin') {
-        header('Location: ../../pages/admin/dashboard.php');
-    } else {
-        header('Location: ../../pages/student/dashboard.php');
-    }
+if ($user['role'] === 'admin') {
+    header('Location: ../../pages/admin/dashboard.php');
+} elseif ($user['role'] === 'moderator') {
+    header('Location: ../../pages/moderator/approvals.php');
+} else {
+    header('Location: ../../pages/student/dashboard.php');
+}
 
-    exit;
+exit;
 
 } catch (PDOException $e) {
     error_log('Login failed: ' . $e->getMessage());
