@@ -22,7 +22,7 @@ unset($_SESSION['register_success']);
 <body>
 
     <main class="auth-container">
-        <h1>NSBM NewsDesk</h1>
+        <h1>NSBM <span>NewsDesk</span></h1>
         <h2>Welcome Back</h2>
         <p>Log in to your account.</p>
 

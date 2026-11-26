@@ -19,7 +19,7 @@ unset($_SESSION['register_errors']);
 <body>
 
     <main class="auth-container">
-        <h1>NSBM NewsDesk</h1>
+        <h1>NSBM <span>NewsDesk</span></h1>
         <h2>Create an Account</h2>
         <p>Register as a student to get started.</p>
 
