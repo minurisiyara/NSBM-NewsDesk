@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/backend/config/session.php';
@@ -130,25 +130,25 @@ function e(string $value): string
 
         <nav class="sidebar-nav">
             <a href="#overview" class="nav-link active">
-                <span>â–¦</span> Overview
+                <span>&#9638;</span> Overview
             </a>
 
             <a href="#submissions" class="nav-link">
-                <span>â–¤</span> Submissions
+                <span>&#9636;</span> Submissions
                 <span class="nav-count"><?= $pendingCount ?></span>
             </a>
 
             <a href="comments.php" class="nav-link">
-                <span>â–§</span> Comments
+                <span>&#9639;</span> Comments
             </a>
 
             <a href="reports.php" class="nav-link">
-                <span>âš‘</span> Reports
+                <span>&#9873;</span> Reports
                 <span class="nav-count"><?= $pendingReportsCount ?></span>
             </a>
 
             <a href="activity.php" class="nav-link">
-                <span>â—·</span> Desk Activity
+                <span>&#9719;</span> Desk Activity
             </a>
         </nav>
 
@@ -168,9 +168,7 @@ function e(string $value): string
         name="csrf_token"
         value="<?= e($_SESSION['csrf_token']) ?>"
     >
-    <button type="submit" class="logout-link" title="Log out">
-        â†—
-    </button>
+    <button type="submit" class="logout-link" title="Log out">&#8618;</button>
 </form>
         </div>
 
@@ -286,7 +284,7 @@ function e(string $value): string
                 <?php if (!$articles): ?>
 
                     <div class="empty-state">
-                        <div class="empty-icon">âœ“</div>
+                        <div class="empty-icon">&#10003;</div>
                         <h3>You're all caught up.</h3>
                         <p>
                             There are currently no pending articles
@@ -438,7 +436,7 @@ function e(string $value): string
         </div>
 
         <footer class="moderator-footer">
-            NSBM NewsDesk Â· Editorial Moderation
+            NSBM NewsDesk &#183; Editorial Moderation
         </footer>
 
     </main>

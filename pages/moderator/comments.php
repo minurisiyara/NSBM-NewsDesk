@@ -178,9 +178,7 @@ $errorMessage = $_GET['error'] ?? '';
                     value="<?= e($_SESSION['csrf_token']) ?>"
                 >
 
-                <button type="submit" class="logout-link" title="Log out">
-                    ↗
-                </button>
+                <button type="submit" class="logout-link" title="Log out">&#8618;</button>
 
             </form>
 
