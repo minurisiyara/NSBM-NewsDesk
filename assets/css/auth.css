@@ -1,3 +1,6 @@
+/* =====================================
+   GENERAL STYLES
+===================================== */
 
 * {
     box-sizing: border-box;
@@ -7,7 +10,7 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: #f2f5f9;
+    background: #f4f7f9;
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -15,6 +18,11 @@ body {
     padding: 24px;
     color: #263238;
 }
+
+
+/* =====================================
+   REGISTER PAGE STYLES
+===================================== */
 
 .auth-container {
     background: #ffffff;
@@ -97,4 +105,427 @@ body {
     border-radius: 6px;
     margin-bottom: 18px;
     font-size: 14px;
+}
+
+
+/* =====================================
+   LOGIN PAGE BACKGROUND
+===================================== */
+
+body.login-page {
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 24px;
+
+    background:
+        radial-gradient(
+            circle at 15% 20%,
+            rgba(27, 94, 32, 0.18),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 85% 80%,
+            rgba(33, 150, 243, 0.18),
+            transparent 35%
+        ),
+        #f4f7f9;
+}
+
+
+/* =====================================
+   LOGIN CONTAINER
+===================================== */
+
+.login-page .auth-container {
+    width: 100%;
+    max-width: 430px;
+    min-width: 0;
+    padding: 36px;
+
+    background: rgba(255, 255, 255, 0.85);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 18px;
+
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
+}
+
+
+/* Inner Card */
+
+.login-page .auth-card {
+    width: 100%;
+    min-width: 0;
+    background: transparent;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+}
+
+
+/* =====================================
+   LOGIN LOGO
+===================================== */
+
+.login-page .auth-logo {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+/* NSBM Logo Image */
+
+.login-page .login-logo {
+    display: block;
+
+    width: 150px !important;
+    height: 150px !important;
+
+    max-width: 150px !important;
+    max-height: 150px !important;
+
+    object-fit: contain;
+
+    margin: 0 auto 12px;
+
+    background: #ffffff;
+    padding: 5px;
+    border-radius: 12px;
+}
+
+/* Logo Heading */
+
+.login-page .auth-logo h1 {
+    color: #006747;
+    font-size: 32px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 0;
+}
+
+
+/* =====================================
+   LOGIN HEADING
+===================================== */
+
+.login-page .auth-heading {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.login-page .auth-heading h3 {
+    color: #263238;
+    font-size: 25px;
+    margin-bottom: 10px;
+}
+
+.login-page .auth-heading p {
+    color: #667085;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+
+/* =====================================
+   LOGIN INPUT FIELDS
+===================================== */
+
+.login-page .form-group {
+    margin-bottom: 20px;
+}
+
+.login-page .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #263238;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.login-page .form-group input {
+    width: 100%;
+    padding: 13px;
+
+    background: rgba(255, 255, 255, 0.85);
+
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+
+    font-size: 14px;
+    color: #263238;
+
+    transition: 0.3s;
+}
+
+.login-page .form-group input:focus {
+    outline: none;
+    border-color: #006747;
+
+    background: #ffffff;
+
+    box-shadow: 0 0 0 3px rgba(0, 103, 71, 0.10);
+}
+
+
+/* =====================================
+   REMEMBER ME
+===================================== */
+
+.login-page .form-options {
+    margin-bottom: 22px;
+    font-size: 14px;
+}
+
+.login-page .remember-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    color: #455a64;
+    cursor: pointer;
+}
+
+.login-page .remember-option input {
+    accent-color: #006747;
+}
+
+
+/* =====================================
+   LOGIN BUTTON
+===================================== */
+
+.login-page .auth-button {
+    width: 100%;
+    padding: 14px;
+
+    background: #006747;
+    color: white;
+
+    border: none;
+    border-radius: 8px;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.login-page .auth-button:hover {
+    background: #004d36;
+    transform: translateY(-2px);
+
+    box-shadow: 0 5px 15px rgba(0, 103, 71, 0.20);
+}
+
+
+/* =====================================
+   LOGIN FOOTER
+===================================== */
+
+.login-page .auth-footer {
+    text-align: center;
+    margin-top: 26px;
+
+    color: #455a64;
+    font-size: 14px;
+}
+
+.login-page .auth-footer a {
+    color: #006747;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.login-page .auth-footer a:hover {
+    text-decoration: underline;
+}
+
+
+/* =====================================
+   LOGIN ERROR MESSAGE
+===================================== */
+
+.login-page .error-message {
+    background: rgba(255, 235, 238, 0.85);
+    color: #c62828;
+
+    padding: 12px;
+    border-radius: 8px;
+
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+
+/* =====================================
+   RESPONSIVE DESIGN
+===================================== */
+
+@media (max-width: 480px) {
+
+    .login-page .auth-container {
+        padding: 28px 22px;
+    }
+
+    .login-page .login-logo {
+        width: 120px !important;
+        height: 120px !important;
+
+        max-width: 120px !important;
+        max-height: 120px !important;
+    }
+
+    .login-page .auth-logo h1 {
+        font-size: 26px;
+    }
+
+    .login-page .auth-heading h3 {
+        font-size: 23px;
+    }
+}
+/* Register Page Logo */
+
+.auth-container .auth-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.auth-container .register-logo {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.auth-container .auth-logo h1 {
+    font-size: 32px;
+    font-weight: bold;
+    margin: 5px 0;
+    text-align: center;
+}
+
+@media (max-width: 600px) {
+
+    .auth-container .register-logo {
+        width: 120px;
+        height: 120px;
+    }
+
+    .auth-container .auth-logo h1 {
+        font-size: 26px;
+    }
+
+}
+/* Login Logo */
+
+.login-page .auth-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.login-page .login-logo {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.login-page .auth-logo h2 {
+    font-size: 32px;
+    font-weight: bold;
+    text-align: center;
+    margin: 5px 0;
+}
+
+@media (max-width: 600px) {
+
+    .login-page .login-logo {
+        width: 120px;
+        height: 120px;
+    }
+
+    .login-page .auth-logo h2 {
+        font-size: 26px;
+    }
+
+}
+/* ==========================================
+   REGISTRATION FORM SECTIONS
+========================================== */
+
+.register-section-title {
+    color: #1b5e20;
+    font-size: 18px;
+    font-weight: bold;
+
+    margin-top: 28px;
+    margin-bottom: 20px;
+
+    padding-bottom: 10px;
+
+    border-bottom: 2px solid #e8f5e9;
+}
+
+
+/* First Section */
+
+.register-section-title:first-of-type {
+    margin-top: 25px;
+}
+
+
+/* Registration Form Spacing */
+
+#registerForm .form-group {
+    margin-bottom: 18px;
+}
+
+
+/* Registration Button */
+
+#registerButton {
+    width: 100%;
+    margin-top: 15px;
+}
+
+
+/* Registration Container */
+
+.auth-container {
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+
+/* Mobile Responsive */
+
+@media (max-width: 600px) {
+
+    .register-section-title {
+        font-size: 16px;
+    }
+
+    .auth-container {
+        margin-top: 15px;
+        margin-bottom: 15px;
+    }
+
 }

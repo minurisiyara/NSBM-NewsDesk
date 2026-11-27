@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/backend/config/session.php';
+require_once dirname(__DIR__, 2) . '/backend/config/database.php';
 
 // Check login
 if (!isset($_SESSION['user_id'])) {
@@ -20,10 +21,19 @@ if (($_SESSION['user_role'] ?? '') !== 'student') {
 $name = $_SESSION['user_name'] ?? 'Student';
 $userId = (int) $_SESSION['user_id'];
 
-// Database connection
-require_once dirname(__DIR__, 2) . '/backend/config/database.php';
+// Active sidebar page
+$activePage = 'my-submissions';
 
-// Get student's articles
+// Generate CSRF token
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+
+// ==========================================
+// GET STUDENT ARTICLES
+// ==========================================
+
 $stmt = $pdo->prepare("
     SELECT
         a.title,
@@ -39,7 +49,7 @@ $stmt = $pdo->prepare("
 
 $stmt->execute([$userId]);
 
-$articles = $stmt->fetchAll();
+$articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
 
@@ -54,101 +64,37 @@ $articles = $stmt->fetchAll();
 
     <title>My Submissions | NSBM NewsDesk</title>
 
+    <!-- Main Student CSS -->
     <link rel="stylesheet" href="../../assets/css/student.css">
+
+    <!-- Student Logo CSS -->
+    <link rel="stylesheet" href="../../assets/css/student-logo.css?v=3">
+
+    <!-- Student Topbar CSS -->
+    <link rel="stylesheet" href="../../assets/css/student-topbar.css?v=2">
 
 </head>
 
 <body>
 
-    <!-- Sidebar -->
 
-    <aside class="sidebar">
+    <!-- Common Student Sidebar -->
 
-        <div class="brand">
-
-            <div class="brand-icon">N</div>
-
-            <div>
-                <h2>NSBM</h2>
-                <span>NewsDesk Portal</span>
-            </div>
-
-        </div>
-
-        <nav class="sidebar-nav">
-
-            <a href="dashboard.php">
-                Dashboard
-            </a>
-
-            <a href="my-submissions.php" class="active">
-                My Submissions
-            </a>
-
-            <a href="submit-article.php">
-                Submit Article
-            </a>
-
-            <a href="bookmarks.php">
-                Saved Research
-            </a>
-
-            <a href="profile.php">
-                Scholar Profile
-            </a>
-
-        </nav>
-
-        <div class="sidebar-bottom">
-
-            <a href="../../index.php">
-                Back to Journal
-            </a>
-
-            <span>NSBM Green University</span>
-
-        </div>
-
-    </aside>
+    <?php
+    include dirname(__DIR__, 2) . '/components/student-sidebar.php';
+    ?>
 
 
     <!-- Main Content -->
 
     <div class="main-content">
 
-        <!-- Topbar -->
 
-        <header class="topbar">
+        <!-- Common Student Topbar -->
 
-            <span class="portal-label">STUDENT PORTAL</span>
-
-            <div class="topbar-right">
-
-                <span>
-                    <?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>
-                </span>
-
-                <form action="../../backend/auth/logout.php" method="POST">
-
-                    <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="<?= htmlspecialchars(
-                            $_SESSION['csrf_token'] ?? '',
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>"
-                    >
-
-                    <button type="submit" class="logout-button">
-                        Log Out
-                    </button>
-
-                </form>
-
-            </div>
-
-        </header>
+        <?php
+        include dirname(__DIR__, 2) . '/components/student-topbar.php';
+        ?>
 
 
         <!-- Page Content -->
@@ -167,7 +113,9 @@ $articles = $stmt->fetchAll();
                 <h1>My Submissions</h1>
 
                 <p>
-                    Hello, <?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>!
+                    Hello,
+                    <?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>!
+
                     Track your submitted articles and check their editorial
                     progress through NSBM NewsDesk.
                 </p>
@@ -191,6 +139,9 @@ $articles = $stmt->fetchAll();
 
             <section class="recent-section">
 
+
+                <!-- Section Heading -->
+
                 <div class="section-heading">
 
                     <div>
@@ -209,6 +160,9 @@ $articles = $stmt->fetchAll();
 
 
                 <?php if (!empty($articles)): ?>
+
+
+                    <!-- Articles Table -->
 
                     <div class="table-container">
 
@@ -238,6 +192,7 @@ $articles = $stmt->fetchAll();
                                 <?php foreach ($articles as $article): ?>
 
                                     <tr>
+
 
                                         <!-- Article Title -->
 
@@ -322,6 +277,7 @@ $articles = $stmt->fetchAll();
 
                                         </td>
 
+
                                     </tr>
 
                                 <?php endforeach; ?>
@@ -356,6 +312,7 @@ $articles = $stmt->fetchAll();
 
 
                 <?php endif; ?>
+
 
             </section>
 

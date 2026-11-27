@@ -1,0 +1,420 @@
+/* ==========================================
+   NSBM STUDENT PROFILE - VIEW ONLY
+========================================== */
+
+
+/* Profile Content */
+
+.profile-content {
+    width: 100%;
+    padding: 30px 32px;
+    box-sizing: border-box;
+}
+
+
+/* Profile Card */
+
+.profile-card {
+    width: 100%;
+    max-width: 950px;
+    margin: 0 auto;
+
+    padding: 32px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e9ec;
+    border-radius: 13px;
+
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+
+    box-sizing: border-box;
+}
+
+
+/* Heading */
+
+.profile-heading {
+    margin-bottom: 30px;
+}
+
+.profile-heading h2 {
+    color: #263238;
+    font-size: 25px;
+    margin: 0 0 8px;
+}
+
+.profile-heading p {
+    color: #777777;
+    font-size: 14px;
+    margin: 0;
+}
+
+
+/* ==========================================
+   PROFILE PHOTO
+========================================== */
+
+.profile-photo-section {
+    text-align: center;
+    margin: 25px 0;
+}
+
+.profile-photo {
+    width: 140px;
+    height: 140px;
+
+    border-radius: 50%;
+    object-fit: cover;
+
+    border: 4px solid #e8f5e9;
+
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
+
+.profile-avatar {
+    width: 140px;
+    height: 140px;
+
+    margin: 0 auto;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 50%;
+
+    background: #1b5e20;
+    color: #ffffff;
+
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.profile-photo-section h3 {
+    color: #263238;
+    font-size: 19px;
+    margin: 15px 0 5px;
+}
+
+.profile-photo-section p {
+    color: #777777;
+    font-size: 13px;
+    margin: 0;
+}
+
+
+/* Divider */
+
+.profile-divider {
+    border: none;
+    border-top: 1px solid #e9edef;
+    margin: 30px 0;
+}
+
+
+/* ==========================================
+   INFORMATION SECTIONS
+========================================== */
+
+.information-section {
+    width: 100%;
+}
+
+.section-title {
+    margin-bottom: 22px;
+}
+
+.section-title h3 {
+    color: #263238;
+    font-size: 19px;
+    margin: 0 0 7px;
+}
+
+.section-title p {
+    color: #777777;
+    font-size: 13px;
+    margin: 0;
+}
+
+
+/* Information Grid */
+
+.profile-fields-grid {
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 18px;
+
+}
+
+
+/* Information Items */
+
+.profile-info-item {
+    display: flex;
+    flex-direction: column;
+
+    gap: 9px;
+
+    padding: 17px;
+
+    background: #f9fbfa;
+
+    border: 1px solid #e5e9ec;
+
+    border-radius: 8px;
+
+    min-width: 0;
+}
+
+.profile-info-item span {
+    color: #777777;
+    font-size: 13px;
+}
+
+.profile-info-item strong {
+    color: #263238;
+    font-size: 14px;
+    font-weight: 600;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* ==========================================
+   ADMIN NOTICE
+========================================== */
+
+.profile-notice {
+    margin-top: 30px;
+
+    padding: 17px;
+
+    background: #e8f5e9;
+
+    border-left: 4px solid #1b5e20;
+
+    border-radius: 7px;
+}
+
+.profile-notice strong {
+    color: #1b5e20;
+    font-size: 14px;
+}
+
+.profile-notice p {
+    color: #455a46;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 8px 0 0;
+}
+
+
+/* ==========================================
+   BACK BUTTON
+========================================== */
+
+.profile-buttons {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 25px;
+}
+
+.profile-cancel-btn {
+    display: inline-block;
+
+    padding: 13px 23px;
+
+    background: #1b5e20;
+    color: #ffffff;
+
+    border-radius: 7px;
+
+    text-decoration: none;
+
+    font-size: 14px;
+    font-weight: bold;
+
+    transition: 0.2s;
+}
+
+.profile-cancel-btn:hover {
+    background: #145018;
+}
+
+
+/* ==========================================
+   RESPONSIVE DESIGN
+========================================== */
+
+@media (max-width: 768px) {
+
+    .profile-content {
+        padding: 22px 18px;
+    }
+
+    .profile-card {
+        padding: 25px;
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .profile-content {
+        padding: 15px;
+    }
+
+    .profile-card {
+        padding: 20px;
+    }
+
+    .profile-heading h2 {
+        font-size: 21px;
+    }
+
+    .profile-fields-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-photo,
+    .profile-avatar {
+        width: 110px;
+        height: 110px;
+    }
+
+    .profile-avatar {
+        font-size: 40px;
+    }
+
+    .profile-buttons {
+        flex-direction: column;
+    }
+
+    .profile-cancel-btn {
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+}/* ==========================================
+   STUDENT PROFILE PHOTO CONTROLS
+========================================== */
+
+.profile-photo-section {
+    text-align: center;
+    margin: 25px 0;
+}
+
+.profile-photo-section h3 {
+    color: #263238;
+    font-size: 19px;
+    margin-bottom: 20px;
+}
+
+.profile-photo-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.profile-photo {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #e8f5e9;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
+
+.profile-avatar {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: #1b5e20;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.photo-help {
+    color: #777777;
+    font-size: 13px;
+    margin: 12px 0 20px;
+}
+
+.photo-upload-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.photo-upload-form input[type="file"] {
+    width: auto;
+    max-width: 100%;
+    padding: 10px;
+    background: #f9fbfa;
+    border: 1px solid #dce3df;
+    border-radius: 7px;
+    box-sizing: border-box;
+}
+
+.photo-upload-form .profile-save-btn {
+    background: #1b5e20;
+    color: #ffffff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.photo-upload-form .profile-save-btn:hover {
+    background: #145018;
+}
+
+.remove-photo-form {
+    margin-top: 15px;
+}
+
+.remove-photo-btn {
+    background: #ffebee;
+    color: #c62828;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.remove-photo-btn:hover {
+    background: #ffcdd2;
+}
+
+@media (max-width: 600px) {
+
+    .profile-photo,
+    .profile-avatar {
+        width: 110px;
+        height: 110px;
+    }
+
+    .profile-avatar {
+        font-size: 40px;
+    }
+
+    .photo-upload-form input[type="file"] {
+        width: 100%;
+    }
+
+}
