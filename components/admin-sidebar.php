@@ -1,62 +1,65 @@
-
 <?php
+declare(strict_types=1);
 
-// Ensure active page fallback is set
 $activePage = $activePage ?? 'dashboard';
 
-// Logged-in administrator details
 $adminName = $_SESSION['user_name'] ?? 'Admin User';
-$adminInitial = strtoupper(substr($adminName, 0, 1));
+$adminInitial = strtoupper(substr($adminName, 0, 1) ?: 'A');
 
+$projectRoot = dirname(__DIR__);
+$logoRel = 'assets/images/nsbm-logo.png';
+$logoVer = is_file($projectRoot . '/' . $logoRel)
+    ? '?v=' . (string) filemtime($projectRoot . '/' . $logoRel)
+    : '';
+
+$nsbmLogoSrc = '../../' . $logoRel . $logoVer;
 ?>
 
 <!-- Mobile Overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<aside class="admin-sidebar" id="adminSidebar">
+<aside class="admin-sidebar side" id="adminSidebar">
 
-    <!-- Sidebar Header / Branding -->
-    <div class="sidebar-header sidebar-brand">
+    <!-- Sidebar Branding -->
+    <div class="sidebar-brand">
+        <div class="brand-top-row">
 
-        <div class="brand">
+            <a class="brand" href="dashboard.php">
+                <img
+                    src="<?= htmlspecialchars($nsbmLogoSrc, ENT_QUOTES, 'UTF-8') ?>"
+                    alt="NSBM Green University"
+                    class="logo nsbm-logo-img"
+                    onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'logo',textContent:'NSBM'}))"
+                >
 
-            <img
-                src="../../assets/images/nsbm-logo.png"
-                alt="NSBM Logo"
-                class="brand-logo"
+                <span class="brand-text">
+                    <span>NSBM NewsDesk</span>
+                    <small class="brand-sub">Admin</small>
+                </span>
+            </a>
+
+            <button
+                type="button"
+                class="sidebar-toggle-btn burger"
+                id="sidebarToggleBtn"
+                title="Toggle Sidebar"
+                aria-label="Toggle Sidebar"
             >
-
-            <div class="brand-info">
-                <span class="brand-title">NSBM NewsDesk</span>
-                <span class="brand-tag">Admin</span>
-            </div>
+                &#9776;
+            </button>
 
         </div>
-
-        <button
-            type="button"
-            class="toggle-btn sidebar-toggle-btn"
-            id="sidebarToggleBtn"
-            title="Toggle Sidebar"
-            aria-label="Toggle Sidebar"
-        >
-            ☰
-        </button>
-
     </div>
 
-    <!-- Logged-in Admin Profile Card -->
-    <div class="sidebar-user-card">
+    <!-- Administrator Profile -->
+    <div class="sidebar-user-card prof">
 
-        <div class="avatar-circle">
+        <div class="avatar-circle av">
             <?= htmlspecialchars($adminInitial, ENT_QUOTES, 'UTF-8') ?>
         </div>
 
         <div class="user-meta">
-            <h4>
-                <?= htmlspecialchars($adminName, ENT_QUOTES, 'UTF-8') ?>
-            </h4>
-
+            <h4><?= htmlspecialchars($adminName, ENT_QUOTES, 'UTF-8') ?></h4>
             <span>Administrator</span>
         </div>
 
@@ -65,66 +68,52 @@ $adminInitial = strtoupper(substr($adminName, 0, 1));
     <!-- Admin Navigation -->
     <nav class="sidebar-nav">
 
-        <a
-            href="dashboard.php"
-            class="nav-item <?= $activePage === 'dashboard' ? 'active' : '' ?>"
-            title="Dashboard"
-        >
-            <span class="nav-icon">📊</span>
+        <a href="dashboard.php"
+           class="nav-item <?= $activePage === 'dashboard' ? 'active on' : '' ?>"
+           title="Dashboard">
+            <span class="nav-icon">&#128202;</span>
             <span class="nav-text">Dashboard</span>
         </a>
 
-        <a
-            href="news.php"
-            class="nav-item <?= $activePage === 'news' ? 'active' : '' ?>"
-            title="News Management"
-        >
-            <span class="nav-icon">📰</span>
+        <a href="news.php"
+           class="nav-item <?= $activePage === 'news' ? 'active on' : '' ?>"
+           title="News Management">
+            <span class="nav-icon">&#128240;</span>
             <span class="nav-text">News Management</span>
         </a>
 
-        <a
-            href="categories.php"
-            class="nav-item <?= $activePage === 'categories' ? 'active' : '' ?>"
-            title="Categories"
-        >
-            <span class="nav-icon">🏷️</span>
+        <a href="categories.php"
+           class="nav-item <?= $activePage === 'categories' ? 'active on' : '' ?>"
+           title="Categories">
+            <span class="nav-icon">&#127991;</span>
             <span class="nav-text">Categories</span>
         </a>
 
-        <a
-            href="announcements.php"
-            class="nav-item <?= $activePage === 'announcements' ? 'active' : '' ?>"
-            title="Announcements"
-        >
-            <span class="nav-icon">📢</span>
+        <a href="announcements.php"
+           class="nav-item <?= $activePage === 'announcements' ? 'active on' : '' ?>"
+           title="Announcements">
+            <span class="nav-icon">&#128227;</span>
             <span class="nav-text">Announcements</span>
         </a>
 
-        <a
-            href="comments.php"
-            class="nav-item <?= $activePage === 'comments' ? 'active' : '' ?>"
-            title="Comments"
-        >
-            <span class="nav-icon">💬</span>
+        <a href="comments.php"
+           class="nav-item <?= $activePage === 'comments' ? 'active on' : '' ?>"
+           title="Comments">
+            <span class="nav-icon">&#128172;</span>
             <span class="nav-text">Comments</span>
         </a>
 
-        <a
-            href="reports.php"
-            class="nav-item <?= $activePage === 'reports' ? 'active' : '' ?>"
-            title="Reports"
-        >
-            <span class="nav-icon">📈</span>
+        <a href="reports.php"
+           class="nav-item <?= $activePage === 'reports' ? 'active on' : '' ?>"
+           title="Reports">
+            <span class="nav-icon">&#128200;</span>
             <span class="nav-text">Reports</span>
         </a>
 
-        <a
-            href="users.php"
-            class="nav-item <?= $activePage === 'users' ? 'active' : '' ?>"
-            title="Users"
-        >
-            <span class="nav-icon">👥</span>
+        <a href="users.php"
+           class="nav-item <?= $activePage === 'users' ? 'active on' : '' ?>"
+           title="Users">
+            <span class="nav-icon">&#128101;</span>
             <span class="nav-text">Users</span>
         </a>
 
