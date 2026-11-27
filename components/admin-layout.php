@@ -27,10 +27,23 @@ function admin_h(mixed $val): string
     return htmlspecialchars((string) ($val ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
+function admin_asset_url(string $relativePath): string
+{
+    $projectRoot = dirname(__DIR__);
+    $cleanRel = ltrim(str_replace('\\', '/', $relativePath), '/');
+    $fullPath = $projectRoot . '/' . $cleanRel;
+    $version = is_file($fullPath) ? '?v=' . (string) filemtime($fullPath) : '';
+
+    return '../../' . $cleanRel . $version;
+}
+
 function admin_render_start(string $activePage, string $pageTitle): void
 {
     $authUser = admin_require_auth();
     $initial = strtoupper(substr($authUser['name'], 0, 1) ?: 'A');
+    $adminCssHref = admin_asset_url('assets/css/admin.css');
+    $nsbmLogoHref = admin_asset_url('assets/images/nsbm-logo.png');
+
     $navItems = [
         ['dashboard.php', 'Dashboard'],
         ['news.php', 'News Management'],
@@ -45,16 +58,26 @@ function admin_render_start(string $activePage, string $pageTitle): void
     <html lang="en">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <meta name="color-scheme" content="light">
         <title><?= admin_h($pageTitle) ?> | NSBM NewsDesk Admin</title>
-        <link rel="stylesheet" href="../../assets/css/admin.css">
+        <link rel="stylesheet" href="<?= admin_h($adminCssHref) ?>">
     </head>
     <body>
     <div class="adm">
+        <div class="side-backdrop" id="sidebarBackdrop"></div>
         <aside class="side" id="adminSidebar">
             <a class="brand" href="dashboard.php">
-                <span class="logo">NN</span>
-                <span>NSBM NewsDesk Admin</span>
+                <img
+                    src="<?= admin_h($nsbmLogoHref) ?>"
+                    alt="NSBM Green University"
+                    class="logo nsbm-logo-img"
+                    onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'logo',textContent:'NSBM'}))"
+                >
+                <span class="brand-text">
+                    <span>NSBM NewsDesk</span>
+                    <small class="brand-sub">Admin</small>
+                </span>
             </a>
 
             <div class="prof">
@@ -94,6 +117,7 @@ function admin_render_start(string $activePage, string $pageTitle): void
 
 function admin_render_end(bool $includeCharts = false): void
 {
+    $adminJsHref = admin_asset_url('assets/js/admin.js');
     ?>
             </main>
         </div>
@@ -101,7 +125,40 @@ function admin_render_end(bool $includeCharts = false): void
     <?php if ($includeCharts): ?>
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
     <?php endif; ?>
-    <script src="../../assets/js/admin.js"></script>
+    <script src="<?= admin_h($adminJsHref) ?>"></script>
+    <script>
+    (function () {
+        const sidebar = document.getElementById('adminSidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        const burger = document.getElementById('sidebarBurger');
+        const toggleBtn = document.getElementById('sidebarToggleBtn');
+
+        function setDrawer(open) {
+            if (!sidebar) return;
+            sidebar.classList.toggle('open', open);
+            if (backdrop) backdrop.classList.toggle('show', open);
+        }
+
+        if (burger) {
+            burger.addEventListener('click', () => {
+                setDrawer(!sidebar.classList.contains('open'));
+            });
+        }
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                setDrawer(!sidebar.classList.contains('open'));
+            });
+        }
+        if (backdrop) {
+            backdrop.addEventListener('click', () => setDrawer(false));
+        }
+        if (sidebar) {
+            sidebar.querySelectorAll('nav a').forEach((link) => {
+                link.addEventListener('click', () => setDrawer(false));
+            });
+        }
+    })();
+    </script>
     </body>
     </html>
     <?php

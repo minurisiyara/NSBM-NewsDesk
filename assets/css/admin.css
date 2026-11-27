@@ -1,19 +1,44 @@
-/* NSBM NewsDesk Admin Panel Stylesheet */
+
+/* =====================================================
+   NSBM NEWSDESK - ADMIN DASHBOARD
+   Premium Green | Blue | Purple Theme
+   Responsive Design
+===================================================== */
+
+/* 1. ROOT VARIABLES */
 :root {
     --g: #0b4b32;
     --gd: #063321;
+    --green: #08784f;
+    --green-light: #e8f5ee;
+
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+
+    --purple: #7c3aed;
+    --purple-light: #f5f0ff;
+
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+
     --bg: #f4f7f6;
     --card: #ffffff;
     --bd: #e2e8f0;
+
     --tx: #0f172a;
     --mut: #64748b;
+
     --red: #dc2626;
-    --soft: #ecf5f0;
     --ok: #059669;
     --warn: #b45309;
+
+    --soft: #ecf5f0;
     --radius: 12px;
+
+    color-scheme: light;
 }
 
+/* 2. RESET */
 *,
 *::before,
 *::after {
@@ -21,11 +46,17 @@
     margin: 0;
 }
 
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 75px;
+}
+
 body {
     font: 15px/1.55 "Inter", system-ui, -apple-system, sans-serif;
     background: var(--bg);
     color: var(--tx);
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 h1, h2, h3, h4, .serif {
@@ -51,138 +82,23 @@ textarea {
     color: inherit;
 }
 
-/* Layout Shell */
+button {
+    cursor: pointer;
+}
+
+img {
+    max-width: 100%;
+}
+
+/* 3. MAIN LAYOUT */
 .adm {
     display: flex;
     min-height: 100vh;
     width: 100%;
     background: var(--bg);
+    position: relative;
 }
 
-/* Sidebar */
-.side {
-    width: 250px;
-    min-width: 250px;
-    background: var(--card);
-    border-right: 1px solid var(--bd);
-    padding: 18px 14px;
-    flex: none;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-    transition: transform 0.25s ease;
-    z-index: 30;
-    display: flex;
-    flex-direction: column;
-}
-
-.side a {
-    text-decoration: none !important;
-}
-
-.side svg,
-.top svg {
-    width: 18px !important;
-    height: 18px !important;
-    max-width: 18px !important;
-    max-height: 18px !important;
-    flex-shrink: 0;
-    display: inline-block;
-}
-
-.brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 700;
-    font-family: "Playfair Display", Georgia, serif;
-    font-size: 16px;
-    color: var(--g);
-    margin-bottom: 18px;
-}
-
-.logo {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    border-radius: 9px;
-    background: var(--g);
-    color: #fff;
-    display: grid;
-    place-items: center;
-    font: 700 14px/1 "Inter", sans-serif;
-    flex-shrink: 0;
-}
-
-.prof {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    background: var(--soft);
-    padding: 10px 12px;
-    border-radius: 10px;
-    margin-bottom: 16px;
-}
-
-.av {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    border-radius: 50%;
-    background: var(--g);
-    color: #fff;
-    display: grid;
-    place-items: center;
-    font-weight: 700;
-    font-size: 13px;
-    flex: none;
-}
-
-.prof b {
-    display: block;
-    font-size: 14px;
-    color: var(--tx);
-    line-height: 1.25;
-}
-
-.prof small {
-    display: block;
-    color: var(--mut);
-    font-size: 12px;
-}
-
-.side nav {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    flex: 1;
-}
-
-.side nav a {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 14px;
-    color: var(--mut);
-    transition: background-color 0.18s ease, color 0.18s ease;
-}
-
-.side nav a:hover {
-    background: var(--soft);
-    color: var(--g);
-}
-
-.side nav a.on {
-    background: var(--g);
-    color: #fff !important;
-    font-weight: 600;
-}
-
-/* Main Content & Topbar */
 .main {
     flex: 1;
     min-width: 0;
@@ -190,30 +106,234 @@ textarea {
     flex-direction: column;
 }
 
+/* 4. SIDEBAR */
+.side,
+.admin-sidebar {
+    width: 256px;
+    min-width: 256px;
+    background: linear-gradient(180deg, #0b4b32 0%, #063321 100%);
+    border-right: 1px solid rgba(255,255,255,0.08);
+    padding: 22px 15px;
+    flex: none;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    transition: transform 0.25s ease;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+}
+
+.side::-webkit-scrollbar {
+    width: 5px;
+}
+
+.side::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+}
+
+.side a,
+.admin-sidebar a {
+    text-decoration: none !important;
+}
+
+/* Brand */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-weight: 700;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 16px;
+    color: #fff;
+    margin-bottom: 25px;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.brand-sub {
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: #a7d5bd;
+}
+
+.logo {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--g);
+    display: grid;
+    place-items: center;
+    font: 700 11px/1 "Inter", sans-serif;
+    flex-shrink: 0;
+}
+
+.side .brand .nsbm-logo-img,
+.admin-sidebar .nsbm-logo-img {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    object-fit: contain;
+    border-radius: 9px;
+    background: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 3px;
+    flex-shrink: 0;
+}
+
+.brand-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* User Profile */
+.prof,
+.sidebar-user-card {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: rgba(255,255,255,0.09);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 11px 12px;
+    border-radius: 11px;
+    margin-bottom: 25px;
+}
+
+.av,
+.avatar-circle {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex: none;
+}
+
+.prof b,
+.user-meta h4 {
+    display: block;
+    font-size: 13px;
+    color: #fff;
+    line-height: 1.4;
+}
+
+.prof small,
+.user-meta span {
+    display: block;
+    color: #b8d9c7;
+    font-size: 11px;
+}
+
+/* Navigation */
+.side nav,
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.side nav a,
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 11px 13px;
+    border-radius: 9px;
+    font-weight: 500;
+    font-size: 13px;
+    color: #c7ded1;
+    transition: all 0.2s ease;
+}
+
+.side nav a:hover,
+.sidebar-nav a:hover {
+    background: rgba(255,255,255,0.11);
+    color: #fff;
+    transform: translateX(3px);
+}
+
+.side nav a.on,
+.sidebar-nav a.on,
+.sidebar-nav a.active {
+    background: linear-gradient(110deg, #10a36e, #08784f);
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.16);
+}
+
+/* 5. SIDEBAR BACKDROP */
+.side-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.55);
+    backdrop-filter: blur(3px);
+    z-index: 35;
+}
+
+.side-backdrop.show {
+    display: block;
+}
+
+/* 6. TOPBAR */
 .top {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 22px;
-    min-height: 62px;
-    background: var(--card);
+    padding: 13px 24px;
+    min-height: 68px;
+    background: #fff;
     border-bottom: 1px solid var(--bd);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 25;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.025);
 }
 
 .top h2 {
     font-size: 20px;
     font-weight: 700;
+    color: #123f30;
     flex: 1;
     margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.top svg,
+.side svg {
+    width: 18px !important;
+    height: 18px !important;
+    max-width: 18px !important;
+    max-height: 18px !important;
+    flex-shrink: 0;
 }
 
 .topbar-right {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
 }
 
 .topbar-right form {
@@ -223,59 +343,173 @@ textarea {
 
 .burger {
     display: none;
-    background: var(--card);
+    background: #fff;
     border: 1px solid var(--bd);
-    border-radius: 8px;
+    border-radius: 9px;
     width: 38px;
     height: 38px;
+    min-width: 38px;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 19px;
     align-items: center;
     justify-content: center;
+    color: var(--g);
 }
 
+.burger:hover {
+    background: var(--soft);
+}
+
+/* 7. PAGE CONTENT */
 .pg {
-    padding: 22px;
+    padding: 25px;
     width: 100%;
     flex: 1;
+    min-width: 0;
 }
 
-/* Cards, Buttons, Pills */
+/* 8. CARDS */
 .card {
     background: var(--card);
     border: 1px solid var(--bd);
     border-radius: var(--radius);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 7px rgba(15,23,42,0.035);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .pad {
-    padding: 18px;
+    padding: 20px;
 }
 
+/* 9. STATISTICS */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 17px;
+    margin-bottom: 20px;
+}
+
+.stat {
+    padding: 21px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--bd);
+    transition: all 0.25s ease;
+}
+
+.stat::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+}
+
+.stat:nth-child(1) {
+    background: linear-gradient(135deg,#fff,#effaf4);
+}
+
+.stat:nth-child(1)::before {
+    background: #059669;
+}
+
+.stat:nth-child(1) b {
+    color: #08784f;
+}
+
+.stat:nth-child(2) {
+    background: linear-gradient(135deg,#fff,#eff5ff);
+}
+
+.stat:nth-child(2)::before {
+    background: #2563eb;
+}
+
+.stat:nth-child(2) b {
+    color: #2563eb;
+}
+
+.stat:nth-child(3) {
+    background: linear-gradient(135deg,#fff,#f5f0ff);
+}
+
+.stat:nth-child(3)::before {
+    background: #8b5cf6;
+}
+
+.stat:nth-child(3) b {
+    color: #7c3aed;
+}
+
+.stat:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 9px 23px rgba(15,23,42,0.08);
+}
+
+.stat b {
+    font-size: 34px;
+    display: block;
+    line-height: 1.3;
+    margin-bottom: 5px;
+}
+
+.stat span {
+    color: var(--mut);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* 10. DASHBOARD TWO-COLUMN SECTION */
+.two {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 18px;
+    margin-top: 20px;
+}
+
+.two > .card {
+    border-top: 3px solid #059669;
+    min-width: 0;
+}
+
+.two > .card:nth-child(2) {
+    border-top-color: #2563eb;
+}
+
+.two > .card h3,
+.two > .card h4 {
+    color: #123f30;
+    font-size: 16px;
+}
+
+/* 11. BUTTONS */
 .btn {
-    background: var(--g);
+    background: linear-gradient(110deg,#0b4b32,#08784f);
     color: #fff;
     border: 0;
     padding: 9px 16px;
     border-radius: 8px;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    transition: background-color 0.18s ease;
+    transition: all 0.2s ease;
 }
 
 .btn:hover {
-    background: var(--gd);
+    background: #063321;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(11,75,50,0.18);
 }
 
 .btn.o {
-    background: transparent;
-    color: var(--tx);
-    border: 1px solid var(--bd);
+    background: #fff;
+    color: var(--g);
+    border: 1px solid #cbded3;
 }
 
 .btn.o:hover {
@@ -283,7 +517,7 @@ textarea {
 }
 
 .btn.r {
-    background: var(--red);
+    background: #dc2626;
     color: #fff;
     border: 0;
 }
@@ -293,23 +527,25 @@ textarea {
 }
 
 .btn.s {
-    padding: 5px 10px;
-    font-size: 13px;
+    padding: 6px 11px;
+    font-size: 12px;
 }
 
+/* 12. STATUS PILLS */
 .pill {
     display: inline-block;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 11px;
     border-radius: 99px;
     background: var(--g);
     color: #fff;
+    white-space: nowrap;
 }
 
 .pill.ok {
-    background: #d1fae5;
-    color: #065f46;
+    background: #dcfce7;
+    color: #166534;
 }
 
 .pill.am {
@@ -318,20 +554,23 @@ textarea {
 }
 
 .pill.cnt {
-    background: var(--soft);
-    color: var(--g);
+    background: #e0f2fe;
+    color: #075985;
+    border: 1px solid #bae6fd;
 }
 
+/* 13. META TEXT */
 .meta {
     font-size: 13px;
     color: var(--mut);
 }
 
+/* 14. ALERTS */
 .alert {
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    margin-bottom: 14px;
+    padding: 11px 14px;
+    border-radius: 9px;
+    font-size: 13px;
+    margin-bottom: 15px;
     background: #fee2e2;
     color: #991b1b;
     border: 1px solid #fecaca;
@@ -343,35 +582,91 @@ textarea {
     border-color: #a7f3d0;
 }
 
-/* Grids & Tables */
-.stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 18px;
+/* 15. TABLES */
+.tw {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
 }
 
-.stat {
-    padding: 18px;
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 520px;
 }
 
-.stat b {
-    font-size: 32px;
+th {
+    text-align: left;
+    color: #46665a;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 12px;
+    border-bottom: 1px solid var(--bd);
+    background: #f8faf9;
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+td {
+    padding: 13px 12px;
+    border-bottom: 1px solid #edf0f2;
+    vertical-align: middle;
+    color: #334155;
+}
+
+tbody tr {
+    transition: background 0.2s ease;
+}
+
+tbody tr:hover {
+    background: #f0f8f4;
+}
+
+tr:last-child td {
+    border-bottom: 0;
+}
+
+table td b,
+table td strong,
+.admin-table td b,
+.admin-table td strong,
+.data-table td b,
+.data-table td strong,
+#adminFilterBody td b,
+#adminFilterBody td strong {
+    font-weight: 500 !important;
+}
+
+/* 16. FORMS */
+.inp {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--bd);
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.inp:focus {
+    outline: none;
+    border-color: #0b8f61;
+    box-shadow: 0 0 0 3px rgba(11,143,97,0.12);
+}
+
+.inp::placeholder {
+    color: #94a3b8;
+}
+
+label {
+    font-size: 13px;
+    font-weight: 600;
     display: block;
-    color: var(--g);
-    line-height: 1.15;
-}
-
-.stat span {
-    color: var(--mut);
-    font-size: 14px;
-}
-
-.two {
-    display: grid;
-    grid-template-columns: 1.6fr 1fr;
-    gap: 18px;
-    margin-top: 18px;
+    margin: 12px 0 5px;
+    color: #334155;
 }
 
 .bar {
@@ -382,70 +677,18 @@ textarea {
     margin-bottom: 16px;
 }
 
-.inp {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--bd);
-    border-radius: 8px;
-    background: var(--card);
-    font-size: 14px;
-}
-
-.inp:focus {
-    outline: 2px solid var(--g);
-    outline-offset: -1px;
-}
-
 .bar .inp {
     flex: 1;
     min-width: 140px;
     width: auto;
 }
 
-label {
-    font-size: 13px;
-    font-weight: 600;
-    display: block;
-    margin: 12px 0 5px;
-}
-
-.tw {
-    width: 100%;
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-
-th {
-    text-align: left;
-    color: var(--mut);
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--bd);
-    white-space: nowrap;
-}
-
-td {
-    padding: 11px 12px;
-    border-bottom: 1px solid var(--bd);
-    vertical-align: middle;
-}
-
-tr:last-child td {
-    border: 0;
-}
-
-/* Modals & Switches */
+/* 17. MODALS */
 .mod {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(15,23,42,0.55);
+    backdrop-filter: blur(4px);
     display: none;
     place-items: center;
     z-index: 100;
@@ -462,8 +705,10 @@ tr:last-child td {
     max-height: 90vh;
     overflow: auto;
     padding: 22px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
 
+/* 18. SWITCHES */
 .sw {
     display: flex;
     align-items: center;
@@ -481,6 +726,7 @@ tr:last-child td {
     position: relative;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    flex-shrink: 0;
 }
 
 .sw input[type="checkbox"]::before {
@@ -503,41 +749,220 @@ tr:last-child td {
     left: 21px;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
+/* 19. FOCUS & ACCESSIBILITY */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid rgba(37,99,235,0.35);
+    outline-offset: 2px;
+}
+
+/* 20. RESPONSIVE - TABLETS */
+@media (max-width: 1100px) {
     .two {
         grid-template-columns: 1fr;
     }
 }
 
+/* 21. RESPONSIVE - MOBILE */
 @media (max-width: 820px) {
-    .side {
+    .side,
+    .admin-sidebar {
         position: fixed;
         left: 0;
         top: 0;
-        height: 100vh;
+        height: 100dvh;
         transform: translateX(-100%);
         z-index: 120;
+        width: 270px;
+        min-width: 270px;
+        box-shadow: none;
     }
 
-    .side.open {
+    .side.open,
+    .admin-sidebar.open {
         transform: translateX(0);
-        box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 0 40px rgba(0,0,0,0.3);
     }
 
     .burger {
         display: inline-flex;
     }
+
+    .top {
+        padding: 10px 14px;
+        gap: 8px;
+        min-height: 60px;
+    }
+
+    .top h2 {
+        font-size: 17px;
+    }
+
+    .topbar-right {
+        gap: 6px;
+    }
+
+    .topbar-right .av {
+        display: none;
+    }
+
+    .pg {
+        padding: 16px;
+    }
+
+    .pad {
+        padding: 15px;
+    }
+
+    .stats {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .stat {
+        padding: 17px;
+    }
+
+    .stat b {
+        font-size: 27px;
+    }
+
+    .bar > .inp,
+    .bar > select,
+    .bar > input[type="date"] {
+        flex: 1 1 100%;
+        width: 100% !important;
+    }
+
+    .bar > .btn {
+        width: 100%;
+    }
+
+    .two {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
 }
 
-/* Make table title/cell bold tags render in clean normal font weight */
-table td b,
-table td strong,
-.admin-table td b,
-.admin-table td strong,
-.data-table td b,
-.data-table td strong,
-#adminFilterBody td b,
-#adminFilterBody td strong {
-    font-weight: 400 !important;
+/* 22. SMALL MOBILE */
+@media (max-width: 480px) {
+    .pg {
+        padding: 12px;
+    }
+
+    .top {
+        padding: 9px 10px;
+    }
+
+    .top h2 {
+        font-size: 15px;
+    }
+
+    .topbar-right .btn {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .stat b {
+        font-size: 25px;
+    }
+
+    .brand {
+        font-size: 15px;
+    }
+
+    .mod .card {
+        padding: 16px;
+    }
+}
+
+/* 23. REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
+/* Sidebar - Light Green Gradient */
+.side,
+.admin-sidebar {
+    background: linear-gradient(
+        160deg,
+        #126347 0%,
+        #0e7555 45%,
+        #15916b 100%
+    ) !important;
+}
+
+/* Sidebar brand area */
+.side .brand,
+.admin-sidebar .sidebar-brand {
+    background: transparent;
+}
+
+/* Sidebar profile card */
+.side .prof,
+.admin-sidebar .sidebar-user-card {
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(8px);
+}
+
+/* Sidebar navigation */
+.side nav a,
+.admin-sidebar .nav-item {
+    transition: all 0.25s ease;
+}
+
+/* Hover effect */
+.side nav a:hover,
+.admin-sidebar .nav-item:hover {
+    background: rgba(255, 255, 255, 0.13);
+    color: #ffffff;
+}
+
+/* Active navigation */
+.side nav a.on,
+.admin-sidebar .nav-item.active {
+    background: linear-gradient(
+        90deg,
+        #10a875,
+        #18b981
+    );
+    color: #ffffff;
+}
+
+/* Modal visibility and interaction */
+
+.mod {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(5, 30, 22, 0.55);
+    backdrop-filter: blur(5px);
+    padding: 20px;
+    place-items: center;
+}
+
+.mod.open {
+    display: grid;
+}
+
+.mod > .card {
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
 }
