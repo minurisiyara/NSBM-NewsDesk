@@ -1,102 +1,122 @@
 <?php
-require_once '../../backend/config/database.php';
-require_once '../../backend/config/session.php';
+declare(strict_types=1);
 
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../auth/login.php");
-    exit;
+require_once dirname(__DIR__, 2) . '/components/admin-layout.php';
+require_once dirname(__DIR__, 2) . '/backend/config/database.php';
+
+$message = '';
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = (string) ($_POST['action'] ?? '');
+
+    if ($action === 'create') {
+        $name = trim((string) ($_POST['name'] ?? ''));
+        $description = trim((string) ($_POST['description'] ?? ''));
+
+        if ($name === '') {
+            $error = 'Category name is required.';
+        } else {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO categories (name, description) VALUES (?, ?)");
+                $stmt->execute([$name, $description !== '' ? $description : 'Campus category']);
+                $message = 'Category added successfully.';
+            } catch (Throwable $e) {
+                $error = 'Could not add category: ' . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'delete') {
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id > 0) {
+            try {
+                $countStmt = $pdo->prepare("SELECT COUNT(*) FROM articles WHERE category_id = ?");
+                $countStmt->execute([$id]);
+                $linkedCount = (int) $countStmt->fetchColumn();
+
+                if ($linkedCount > 0) {
+                    $error = "Cannot delete category because {$linkedCount} article(s) are linked to it.";
+                } else {
+                    $delStmt = $pdo->prepare("DELETE FROM categories WHERE id = ?");
+                    $delStmt->execute([$id]);
+                    $message = 'Category deleted.';
+                }
+            } catch (Throwable $e) {
+                $error = 'Could not delete category: ' . $e->getMessage();
+            }
+        }
+    }
 }
 
-$activePage = 'categories';
-$loggedInUserName = $_SESSION['user_name'] ?? 'Admin User';
-$firstLetter = strtoupper(substr($loggedInUserName, 0, 1));
+$categories = [];
+try {
+    $categories = $pdo->query("
+        SELECT c.id, c.name, c.description, COUNT(a.id) AS article_count
+        FROM categories c
+        LEFT JOIN articles a ON a.category_id = c.id
+        GROUP BY c.id, c.name, c.description
+        ORDER BY c.name ASC
+    ")->fetchAll();
+} catch (Throwable $e) {
+    $error = $error ?: ('Error loading categories: ' . $e->getMessage());
+}
 
-// Fetch stats & categories
-$totalArticles = $pdo->query("SELECT COUNT(*) FROM articles")->fetchColumn() ?: 0;
-$publishedArticles = $pdo->query("SELECT COUNT(*) FROM articles WHERE status = 'published'")->fetchColumn() ?: 0;
-$totalCategories = $pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn() ?: 0;
-
-$categories = $pdo->query("
-    SELECT categories.*, COUNT(articles.id) AS article_count 
-    FROM categories 
-    LEFT JOIN articles ON categories.id = articles.category_id 
-    GROUP BY categories.id 
-    ORDER BY categories.name ASC
-")->fetchAll(PDO::FETCH_ASSOC);
+admin_render_start('categories.php', 'Categories');
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Categories Management - NSBM NewsDesk</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css?v=3.0">
-    <script>
-        if (localStorage.getItem('sidebar-collapsed') === 'true') {
-            document.documentElement.classList.add('sidebar-collapsed');
-        }
-    </script>
-</head>
-<body>
+<?php if ($message !== ''): ?>
+    <div class="alert ok"><?= admin_h($message) ?></div>
+<?php endif; ?>
+<?php if ($error !== ''): ?>
+    <div class="alert"><?= admin_h($error) ?></div>
+<?php endif; ?>
 
-    <?php include '../../components/admin-sidebar.php'; ?>
+<div class="two" style="grid-template-columns:1fr 1.6fr;margin-top:0">
+    <div class="card pad">
+        <h3 style="font-family:Inter;margin-bottom:10px">Add Category</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="create">
+            <label for="catName">Name</label>
+            <input type="text" id="catName" name="name" class="inp" placeholder="e.g. Academic" required>
 
-    <main class="admin-main">
-        <header class="top-bar">
-            <div>
-                <h1 style="font-size: 1.6rem; font-weight: 800;">Categories Management</h1>
-            </div>
-            <div style="display: flex; gap: 12px; align-items: center;">
-                <span class="brand-badge">Admin</span>
-                <div class="user-profile">
-                    <span><?= htmlspecialchars($loggedInUserName) ?></span>
-                </div>
-            </div>
-        </header>
+            <label for="catDesc">Description</label>
+            <textarea id="catDesc" name="description" class="inp" rows="3" placeholder="Short description"></textarea>
 
-        <!-- Stats Bar -->
-        <section class="stats-grid">
-            <div class="stat-card">
-                <div>
-                    <h3>Total Articles</h3>
-                    <div class="number"><?= $totalArticles ?></div>
-                </div>
-                <svg class="sparkline" viewBox="0 0 100 30"><path d="M0 25 Q25 5, 50 15 T100 5" /></svg>
-            </div>
-            <div class="stat-card">
-                <div>
-                    <h3>Published</h3>
-                    <div class="number"><?= $publishedArticles ?></div>
-                </div>
-                <svg class="sparkline" viewBox="0 0 100 30"><path d="M0 20 Q30 5, 60 25 T100 10" /></svg>
-            </div>
-            <div class="stat-card">
-                <div>
-                    <h3>Total Categories</h3>
-                    <div class="number"><?= $totalCategories ?></div>
-                </div>
-                <svg class="sparkline" viewBox="0 0 100 30"><path d="M0 15 Q40 25, 70 5 T100 20" /></svg>
-            </div>
-        </section>
+            <button type="submit" class="btn" style="margin-top:14px">Save Category</button>
+        </form>
+    </div>
 
-        <!-- Category Cards Grid -->
-        <div class="category-grid">
-            <?php foreach ($categories as $cat): ?>
-                <div class="category-card">
-                    <div>
-                        <div class="cat-header">
-                            <h3><?= htmlspecialchars($cat['name']) ?></h3>
-                        </div>
-                        <p><?= htmlspecialchars($cat['description'] ?? 'No description provided.') ?></p>
-                    </div>
-                    <div class="cat-footer">
-                        <span class="count-badge">Active articles: <?= $cat['article_count'] ?></span>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </main>
+    <div class="card pad tw">
+        <table>
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Articles</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php if (!empty($categories)): ?>
+                <?php foreach ($categories as $cat): ?>
+                    <tr>
+                        <td><b><?= admin_h($cat['name'] ?? '') ?></b></td>
+                        <td class="meta"><?= admin_h($cat['description'] ?? '') ?></td>
+                        <td><span class="pill cnt"><?= (int) ($cat['article_count'] ?? 0) ?></span></td>
+                        <td>
+                            <form method="POST" style="display:inline" onsubmit="return confirm('Delete this category?');">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="id" value="<?= (int) ($cat['id'] ?? 0) ?>">
+                                <button type="submit" class="btn r s">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr><td colspan="4" class="meta">No categories found.</td></tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    <script src="../../assets/js/admin.js"></script>
-</body>
-</html>
+<?php admin_render_end(false); ?>

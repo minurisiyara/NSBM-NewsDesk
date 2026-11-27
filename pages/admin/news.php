@@ -1,85 +1,247 @@
 <?php
-session_start();
-require_once '../../backend/config/database.php';
+declare(strict_types=1);
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../auth/login.php");
-    exit();
+require_once dirname(__DIR__, 2) . '/components/admin-layout.php';
+require_once dirname(__DIR__, 2) . '/backend/config/database.php';
+
+$message = '';
+$error = '';
+
+/**
+ * Inspect existing columns of `articles` table so optional columns like `published_at` never cause errors.
+ *
+ * @return array<string, bool>
+ */
+function admin_articles_columns(PDO $pdo): array
+{
+    $cols = [];
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM articles");
+        foreach ($stmt->fetchAll() as $row) {
+            if (!empty($row['Field'])) {
+                $cols[(string) $row['Field']] = true;
+            }
+        }
+    } catch (Throwable $e) {
+        // Fallback if SHOW COLUMNS is restricted
+    }
+    return $cols;
 }
 
-// Toggle Featured Status
-if (isset($_POST['toggle_featured'])) {
-    $article_id = (int)$_POST['article_id'];
-    $stmt = $conn->prepare("UPDATE articles SET is_featured = NOT is_featured WHERE id = :id");
-    $stmt->execute(['id' => $article_id]);
+$articleCols = admin_articles_columns($pdo);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = (string) ($_POST['action'] ?? '');
+
+    if ($action === 'create') {
+        $title = trim((string) ($_POST['title'] ?? ''));
+        $summary = trim((string) ($_POST['summary'] ?? ''));
+        $content = trim((string) ($_POST['content'] ?? ''));
+        $categoryId = (int) ($_POST['category_id'] ?? 0);
+        $status = strtolower(trim((string) ($_POST['status'] ?? 'pending')));
+        $authorId = (int) ($_SESSION['user_id'] ?? 1);
+
+        if (!in_array($status, ['pending', 'published', 'draft'], true)) {
+            $status = 'pending';
+        }
+
+        if ($title === '') {
+            $error = 'Article title is required.';
+        } else {
+            try {
+                $insertCols = ['title', 'category_id', 'status', 'created_at'];
+                $placeholders = ['?', '?', '?', 'NOW()'];
+                $params = [$title, $categoryId ?: null, $status];
+
+                if (isset($articleCols['summary'])) {
+                    $insertCols[] = 'summary';
+                    $placeholders[] = '?';
+                    $params[] = $summary;
+                }
+                if (isset($articleCols['content'])) {
+                    $insertCols[] = 'content';
+                    $placeholders[] = '?';
+                    $params[] = $content !== '' ? $content : $summary;
+                }
+                if (isset($articleCols['author_id'])) {
+                    $insertCols[] = 'author_id';
+                    $placeholders[] = '?';
+                    $params[] = $authorId > 0 ? $authorId : null;
+                }
+                if (isset($articleCols['published_at']) && $status === 'published') {
+                    $insertCols[] = 'published_at';
+                    $placeholders[] = 'NOW()';
+                }
+
+                $sql = sprintf(
+                    "INSERT INTO articles (%s) VALUES (%s)",
+                    implode(', ', $insertCols),
+                    implode(', ', $placeholders)
+                );
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+                $message = 'News article created.';
+            } catch (Throwable $e) {
+                $error = 'Could not save article: ' . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'publish') {
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id > 0) {
+            try {
+                if (isset($articleCols['published_at'])) {
+                    $stmt = $pdo->prepare("UPDATE articles SET status = 'published', published_at = COALESCE(published_at, NOW()) WHERE id = ?");
+                } else {
+                    $stmt = $pdo->prepare("UPDATE articles SET status = 'published' WHERE id = ?");
+                }
+                $stmt->execute([$id]);
+                $message = 'Article published successfully.';
+            } catch (Throwable $e) {
+                $error = 'Could not publish article: ' . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'delete') {
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id > 0) {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM articles WHERE id = ?");
+                $stmt->execute([$id]);
+                $message = 'Article deleted.';
+            } catch (Throwable $e) {
+                $error = 'Could not delete article: ' . $e->getMessage();
+            }
+        }
+    }
 }
 
-// Delete News
-if (isset($_POST['delete_news'])) {
-    $article_id = (int)$_POST['article_id'];
-    $stmt = $conn->prepare("DELETE FROM articles WHERE id = :id");
-    $stmt->execute(['id' => $article_id]);
+$categories = [];
+$articles = [];
+try {
+    $categories = $pdo->query("SELECT id, name FROM categories ORDER BY name ASC")->fetchAll();
+} catch (Throwable $e) {
+    $categories = [];
 }
 
-// Read News
-$query = "SELECT a.*, c.name as category_name, u.name as author_name 
-          FROM articles a 
-          LEFT JOIN categories c ON a.category_id = c.id 
-          LEFT JOIN users u ON a.author_id = u.id 
-          ORDER BY a.created_at DESC";
-$stmt = $conn->prepare($query);
-$stmt->execute();
-$articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $articles = $pdo->query("
+        SELECT a.id, a.title, a.status, a.created_at, COALESCE(c.name, 'General') AS category_name
+        FROM articles a
+        LEFT JOIN categories c ON a.category_id = c.id
+        ORDER BY a.id DESC
+    ")->fetchAll();
+} catch (Throwable $e) {
+    $error = $error ?: ('Could not fetch articles: ' . $e->getMessage());
+}
+
+admin_render_start('news.php', 'News Management');
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>News Management - Admin</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <link rel="stylesheet" href="../../assets/css/admin.css">
-</head>
-<body>
-    <?php include '../../components/admin-sidebar.php'; ?>
+<?php if ($message !== ''): ?><div class="alert ok"><?= admin_h($message) ?></div><?php endif; ?>
+<?php if ($error !== ''): ?><div class="alert"><?= admin_h($error) ?></div><?php endif; ?>
 
-    <main class="main-content">
-        <h2>News Management</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Author</th>
-                    <th>Status</th>
-                    <th>Featured</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($articles as $art): ?>
-                <tr>
-                    <td><?= htmlspecialchars($art['title']) ?></td>
-                    <td><?= htmlspecialchars($art['category_name']) ?></td>
-                    <td><?= htmlspecialchars($art['author_name']) ?></td>
-                    <td><span class="badge status-<?= $art['status'] ?>"><?= $art['status'] ?></span></td>
-                    <td>
-                        <form method="POST" style="display:inline;">
-                            <input type="hidden" name="article_id" value="<?= $art['id'] ?>">
-                            <button type="submit" name="toggle_featured">
-                                <?= $art['is_featured'] ? '★ Featured' : '☆ Make Featured' ?>
-                            </button>
+<div class="bar">
+    <input type="text" id="adminSearchInput" class="inp" placeholder="Search articles...">
+    <select id="adminStatusFilter" class="inp" style="width:auto">
+        <option value="">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="published">Published</option>
+        <option value="draft">Draft</option>
+    </select>
+    <select id="adminCategoryFilter" class="inp" style="width:auto">
+        <option value="">All Categories</option>
+        <?php foreach ($categories as $c): ?>
+            <option value="<?= admin_h($c['name']) ?>"><?= admin_h($c['name']) ?></option>
+        <?php endforeach; ?>
+    </select>
+    <button type="button" class="btn" onclick="AdminUI.openModal('addNewsModal')">+ Add News</button>
+</div>
+
+<div class="card tw">
+    <table>
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="adminFilterBody">
+        <?php if (!empty($articles)): ?>
+            <?php foreach ($articles as $art): ?>
+                <?php
+                $aid = (int) ($art['id'] ?? 0);
+                $st = strtolower((string) ($art['status'] ?? 'pending'));
+                $pillClass = $st === 'published' ? 'ok' : 'am';
+                ?>
+                <tr data-filter-row
+                    data-search="<?= admin_h(($art['title'] ?? '') . ' ' . ($art['category_name'] ?? '')) ?>"
+                    data-status="<?= admin_h($st) ?>"
+                    data-category="<?= admin_h($art['category_name'] ?? '') ?>">
+                    <td><b><?= admin_h($art['title'] ?? '') ?></b></td>
+                    <td><?= admin_h($art['category_name'] ?? 'General') ?></td>
+                    <td><span class="pill <?= $pillClass ?>"><?= admin_h(ucfirst($st)) ?></span></td>
+                    <td><?= admin_h(!empty($art['created_at']) ? date('d M Y', strtotime((string) $art['created_at'])) : '—') ?></td>
+                    <td style="white-space:nowrap;display:inline-flex;gap:6px">
+                        <?php if ($st !== 'published'): ?>
+                            <form method="POST" style="display:inline">
+                                <input type="hidden" name="action" value="publish">
+                                <input type="hidden" name="id" value="<?= $aid ?>">
+                                <button type="submit" class="btn s">Publish</button>
+                            </form>
+                        <?php endif; ?>
+
+                        <form method="POST" style="display:inline" onsubmit="return confirm('Delete this article?');">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="id" value="<?= $aid ?>">
+                            <button type="submit" class="btn r s">Delete</button>
                         </form>
                     </td>
-                    <td>
-                        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this article?');">
-                            <input type="hidden" name="article_id" value="<?= $art['id'] ?>">
-                            <button type="submit" name="delete_news" class="btn-danger">Delete</button>
-                        </form>
-                    </td>
                 </tr>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <tr><td colspan="5" class="meta">No articles found.</td></tr>
+        <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
+<div class="mod" id="addNewsModal">
+    <div class="card">
+        <h3 style="font-family:Inter;margin-bottom:8px">Add News Article</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="create">
+            <label>Title</label>
+            <input type="text" name="title" class="inp" required>
+
+            <label>Category</label>
+            <select name="category_id" class="inp">
+                <option value="">Select category</option>
+                <?php foreach ($categories as $c): ?>
+                    <option value="<?= (int) $c['id'] ?>"><?= admin_h($c['name']) ?></option>
                 <?php endforeach; ?>
-            </tbody>
-        </table>
-    </main>
-</body>
-</html>
+            </select>
+
+            <label>Summary</label>
+            <textarea name="summary" class="inp" rows="2"></textarea>
+
+            <label>Content</label>
+            <textarea name="content" class="inp" rows="4"></textarea>
+
+            <label>Status</label>
+            <select name="status" class="inp">
+                <option value="pending">Pending</option>
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+            </select>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                <button type="button" class="btn o" onclick="AdminUI.closeModal('addNewsModal')">Cancel</button>
+                <button type="submit" class="btn">Save Article</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<?php admin_render_end(false); ?>

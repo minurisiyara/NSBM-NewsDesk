@@ -9,10 +9,39 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// If already logged in, go to dashboard
+// Redirect already logged-in users according to their role
 if (isset($_SESSION['user_id'])) {
-    header('Location: ../student/dashboard.php');
-    exit;
+    $role = $_SESSION['user_role'] ?? 'student';
+
+    switch ($role) {
+        case 'admin':
+            header('Location: ../admin/dashboard.php');
+            exit;
+
+        case 'moderator':
+            header('Location: ../moderator/approvals.php');
+            exit;
+
+        case 'student':
+        default:
+            header('Location: ../student/dashboard.php');
+            exit;
+    }
+}
+
+// Retrieve login error messages
+$loginError = '';
+
+if (isset($_GET['error'])) {
+    $loginError = 'Invalid email or password. Please try again.';
+}
+
+if (!empty($_SESSION['login_errors'])) {
+    $loginError = is_array($_SESSION['login_errors'])
+        ? implode(' ', $_SESSION['login_errors'])
+        : (string) $_SESSION['login_errors'];
+
+    unset($_SESSION['login_errors']);
 }
 
 ?>
@@ -60,13 +89,10 @@ if (isset($_SESSION['user_id'])) {
             </div>
 
             <!-- Error Message -->
-            <?php if (isset($_GET['error'])): ?>
+            <?php if ($loginError !== ''): ?>
 
                 <div class="error-message">
-
-                    Invalid email or password.
-                    Please try again.
-
+                    <?= htmlspecialchars($loginError, ENT_QUOTES, 'UTF-8') ?>
                 </div>
 
             <?php endif; ?>

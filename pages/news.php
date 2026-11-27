@@ -1,234 +1,91 @@
+﻿<?php
+declare(strict_types=1);
 
-<?php
-// Temporary sample news data
-$newsArticles = [
-    [
-        "id" => 1,
-        "category" => "Academic",
-        "title" => "NSBM opens a new chapter in AI research",
-        "description" => "A new research initiative brings students and industry experts together to explore artificial intelligence.",
-        "date" => "September 25, 2025",
-        "image" => "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800"
-    ],
-    [
-        "id" => 2,
-        "category" => "Sports",
-        "title" => "Green University cricketers lift the championship trophy",
-        "description" => "Team NSBM celebrates a memorable victory after an outstanding inter-university tournament.",
-        "date" => "September 24, 2025",
-        "image" => "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800"
-    ],
-    [
-        "id" => 3,
-        "category" => "Events",
-        "title" => "Innovation takes centre stage at Tech Expo 2025",
-        "description" => "Students showcase creative ideas and innovative technology projects.",
-        "date" => "September 23, 2025",
-        "image" => "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800"
-    ],
-    [
-        "id" => 4,
-        "category" => "Academic",
-        "title" => "NSBM celebrates academic excellence",
-        "description" => "Students and lecturers celebrate achievements and academic success.",
-        "date" => "September 20, 2025",
-        "image" => "https://images.unsplash.com/photo-1562774053-701939374585?w=800"
-    ],
-    [
-        "id" => 5,
-        "category" => "Sports",
-        "title" => "Inter-faculty sports meet begins",
-        "description" => "Students come together to represent their faculties in a range of sporting events.",
-        "date" => "September 18, 2025",
-        "image" => "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800"
-    ],
-    [
-        "id" => 6,
-        "category" => "Events",
-        "title" => "New student orientation programme",
-        "description" => "New students are welcomed to the NSBM Green University community.",
-        "date" => "September 15, 2025",
-        "image" => "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800"
-    ]
-];
+require_once __DIR__ . '/../backend/config/database.php';
 
-// Read selected category from URL
-$selectedCategory = $_GET['category'] ?? 'All';
+$selectedCategory = trim($_GET['category'] ?? '');
+$categories = [];
+$articles = [];
 
-// Filter news articles
-$filteredNews = [];
+try {
+    $categories = $pdo->query("SELECT id, name FROM categories ORDER BY name ASC")
+                      ->fetchAll(PDO::FETCH_ASSOC);
 
-foreach ($newsArticles as $article) {
-    if (
-        $selectedCategory === 'All' ||
-        $article['category'] === $selectedCategory
-    ) {
-        $filteredNews[] = $article;
+    if ($selectedCategory !== '') {
+        $stmt = $pdo->prepare("
+            SELECT a.id, a.title, a.summary, a.content, a.image_path,
+                   a.created_at AS display_date,
+                   COALESCE(c.name, 'General') AS category_name
+            FROM articles a
+            LEFT JOIN categories c ON a.category_id = c.id
+            WHERE a.status = 'published' AND LOWER(c.name) = LOWER(:category)
+            ORDER BY a.created_at DESC
+        ");
+        $stmt->execute(['category' => $selectedCategory]);
+    } else {
+        $stmt = $pdo->query("
+            SELECT a.id, a.title, a.summary, a.content, a.image_path,
+                   a.created_at AS display_date,
+                   COALESCE(c.name, 'General') AS category_name
+            FROM articles a
+            LEFT JOIN categories c ON a.category_id = c.id
+            WHERE a.status = 'published'
+            ORDER BY a.created_at DESC
+        ");
     }
+    $articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log('News listing error: ' . $e->getMessage());
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>News | NSBM NewsDesk</title>
-
+    <title><?= $selectedCategory !== '' ? htmlspecialchars($selectedCategory, ENT_QUOTES, 'UTF-8') . ' News' : 'All News' ?> | NSBM NewsDesk</title>
     <link rel="stylesheet" href="../assets/css/news.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=10">
+    <style>
+        .filter-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 28px; }
+        .filter-pill { padding: 8px 16px; border-radius: 999px; background: #ffffff; border: 1px solid #d1d5db; color: #374151; text-decoration: none; font-size: 14px; font-weight: 500; }
+        .filter-pill.active, .filter-pill:hover { background: #09482e; color: #ffffff; border-color: #09482e; }
+    </style>
 </head>
-
 <body>
 
-<!-- Navigation Bar -->
-<header class="navbar">
+<?php include __DIR__ . '/../components/navbar.php'; ?>
 
-    <a href="home.php" class="logo">
-    <img src="../assets/images/nsbm-logo.png" alt="NSBM Green University Logo">
-    <span>NewsDesk</span>
-    </a>
-
-    <nav class="nav-links">
-        <a href="home.php">Home</a>
-        <a href="news.php" class="active">News</a>
-        <a href="news.php?category=Academic">Academic</a>
-        <a href="news.php?category=Sports">Sports</a>
-        <a href="news.php?category=Events">Events</a>
-        <a href="news.php?category=Gallery">Gallery</a>
-        <a href="#">About</a>
-    </nav>
-
-    <div class="nav-actions">
-        <form action="search.php" method="GET" class="search-form">
-            <input type="search" name="q" placeholder="Search news, events...">
-            <button type="submit">⌕</button>
-        </form>
-
-        <a href="auth/login.php" class="login-btn">Login</a>
-        <a href="auth/register.php" class="signup-btn">Sign Up</a>
-    </div>
-
-</header>
-
-<!-- Breaking News -->
-<section class="breaking-news">
-    <strong>✦ BREAKING NEWS</strong>
-    <span>Stay updated with the latest news from NSBM Green University.</span>
-</section>
-
-<!-- News Content -->
-<main class="news-container">
-
-    <div class="news-intro">
-        <p>THE CAMPUS, CONNECTED.</p>
-        <h1>Latest News & Stories</h1>
-        <span>Discover the latest updates, achievements and events from our university community.</span>
-    </div>
-
-    <!-- Category Filters -->
-    <div class="category-filters">
-
-        <a href="news.php"
-           class="<?= $selectedCategory === 'All' ? 'selected' : '' ?>">
-            All News
-        </a>
-
-        <a href="news.php?category=Academic"
-           class="<?= $selectedCategory === 'Academic' ? 'selected' : '' ?>">
-            Academic
-        </a>
-
-        <a href="news.php?category=Sports"
-           class="<?= $selectedCategory === 'Sports' ? 'selected' : '' ?>">
-            Sports
-        </a>
-
-        <a href="news.php?category=Events"
-           class="<?= $selectedCategory === 'Events' ? 'selected' : '' ?>">
-            Events
-        </a>
-
-    </div>
-
-    <h2 class="results-heading">
-        <?= htmlspecialchars($selectedCategory) ?> News
-        <span>(<?= count($filteredNews) ?> articles)</span>
-    </h2>
-
-    <!-- News Cards -->
-    <div class="news-grid">
-
-        <?php foreach ($filteredNews as $article): ?>
-
-            <article class="news-card">
-
-                <img
-                    src="<?= htmlspecialchars($article['image']) ?>"
-                    alt="<?= htmlspecialchars($article['title']) ?>"
-                >
-
-                <div class="news-card-content">
-
-                    <span class="news-category">
-                        <?= htmlspecialchars($article['category']) ?>
-                    </span>
-
-                    <h3><?= htmlspecialchars($article['title']) ?></h3>
-
-                    <p><?= htmlspecialchars($article['description']) ?></p>
-
-                    <div class="news-card-footer">
-    <span><?= htmlspecialchars($article['date']) ?></span>
-
-    <a href="article.php?id=<?= $article['id'] ?>">
-    Read More →
-    </a>
-
-    </div>
-                
-
-            </article>
-
-        <?php endforeach; ?>
-
-    </div>
-
-    <?php if (empty($filteredNews)): ?>
-
-        <div class="no-news">
-            <h2>No news articles found.</h2>
-            <p>Please select another category.</p>
-            <a href="news.php">View All News</a>
+<main class="main-container">
+    <section class="latest-section" style="margin-top: 24px;">
+        <div class="section-heading latest-heading">
+            <h2><?= $selectedCategory !== '' ? htmlspecialchars($selectedCategory, ENT_QUOTES, 'UTF-8') . ' Stories' : 'All Campus News' ?></h2>
+            <span><?= count($articles) ?> article<?= count($articles) === 1 ? '' : 's' ?></span>
         </div>
 
-    <?php endif; ?>
+        <div class="filter-pills">
+            <a href="news.php" class="filter-pill <?= $selectedCategory === '' ? 'active' : '' ?>">All</a>
+            <?php foreach ($categories as $cat): ?>
+                <a href="news.php?category=<?= urlencode($cat['name']) ?>"
+                   class="filter-pill <?= strcasecmp($selectedCategory, $cat['name']) === 0 ? 'active' : '' ?>">
+                    <?= htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8') ?>
+                </a>
+            <?php endforeach; ?>
+        </div>
 
+        <div class="latest-grid">
+            <?php if (!empty($articles)): ?>
+                <?php foreach ($articles as $article): ?>
+                    <?php include __DIR__ . '/../components/new-card.php'; ?>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p style="color: #6b7280; font-size: 15px;">No published news articles found in this category.</p>
+            <?php endif; ?>
+        </div>
+    </section>
 </main>
 
-<!-- Footer -->
-<footer class="home-footer">
-
-    <div class="news-card-footer">
-
-    <span>
-        <?= htmlspecialchars($article['date']) ?>
-    </span>
-
-    <a href="article.php?id=<?= (int) $article['id'] ?>">
-        Read More →
-    </a>
-
-    </div>
-
-    <div class="quick-links">
-        <h3>Quick Links</h3>
-        <a href="home.php">Home</a>
-        <a href="news.php">Latest News</a>
-        <a href="search.php">Search News</a>
-    </div>
-
-</footer>
+<?php include __DIR__ . '/../components/footer.php'; ?>
 
 </body>
 </html>

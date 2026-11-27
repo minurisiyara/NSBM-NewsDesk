@@ -14,13 +14,17 @@ $dotenv = Dotenv::createImmutable($projectRoot);
 $dotenv->safeLoad();
 
 // Check that the required variables exist
+
 $dotenv->required([
     'DB_HOST',
     'DB_PORT',
     'DB_NAME',
-    'DB_USER',
-    'DB_PASS'
+    'DB_USER'
 ])->notEmpty();
+
+$dotenv->required('DB_PASS');
+
+
 
 $host = $_ENV['DB_HOST'];
 $port = $_ENV['DB_PORT'];

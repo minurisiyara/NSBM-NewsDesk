@@ -1,0 +1,23 @@
+name: Repository Structure Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-assets:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate assets directory
+        run: |
+          if [ -d "assests" ]; then
+            echo "::error::Invalid directory 'assests' detected."
+            echo "Please use 'assets' instead."
+            exit 1
+          fi
+
+          echo "Directory structure is valid."

@@ -2,6 +2,8 @@
    GENERAL STYLES
 ===================================== */
 
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;600;700;800&display=swap');
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -9,14 +11,73 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background: #f4f7f9;
+    font-family: "Roboto Slab", Georgia, serif;
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 24px;
-    color: #263238;
+    padding: 28px;
+    color: #172232;
+    background: #071E3A;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Living campus wash, like the homepage hero scrim */
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(2px);
+    z-index: 0;
+}
+
+body::before {
+    width: 520px;
+    height: 520px;
+    left: -140px;
+    top: -160px;
+    background: radial-gradient(circle, rgba(31, 164, 99, 0.55), transparent 68%);
+    animation: orbDrift 14s ease-in-out infinite;
+}
+
+body::after {
+    width: 460px;
+    height: 460px;
+    right: -120px;
+    bottom: -160px;
+    background: radial-gradient(circle, rgba(11, 92, 173, 0.55), transparent 68%);
+    animation: orbDrift 18s ease-in-out infinite reverse;
+}
+
+@keyframes orbDrift {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+        transform: translate3d(28px, 22px, 0) scale(1.08);
+    }
+}
+
+@keyframes cardIn {
+    from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.auth-container,
+.dashboard-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
 }
 
 
@@ -26,35 +87,58 @@ body {
 
 .auth-container {
     background: #ffffff;
-    width: 100%;
-    max-width: 430px;
-    padding: 36px;
-    border-radius: 12px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+    max-width: 440px;
+    padding: 40px 36px 32px;
+    border-radius: 28px;
+    box-shadow: 0 24px 60px rgb(2 8 18 / 0.35);
+    animation: cardIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.auth-container h1 {
-    color: #006747;
-    text-align: center;
-    font-size: 26px;
-    margin-bottom: 12px;
+.auth-container::before {
+    content: "";
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    top: 0;
+    height: 4px;
+    border-radius: 0 0 8px 8px;
+    background: linear-gradient(90deg, #071E3A 0%, #0B5CAD 48%, #1FA463 100%);
 }
 
-.auth-container h2 {
+.auth-container h1,
+.dashboard-card h1 {
     text-align: center;
-    margin-bottom: 10px;
-    font-size: 23px;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+    color: #071E3A;
 }
 
-.auth-container > p {
+.auth-container h1 span,
+.dashboard-card h1 span {
+    color: #168550;
+}
+
+.auth-container h2,
+.dashboard-card h2 {
     text-align: center;
-    color: #667085;
-    margin-bottom: 24px;
-    line-height: 1.5;
+    margin-bottom: 8px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #172232;
+}
+
+.auth-container > p,
+.dashboard-card p {
+    text-align: center;
+    color: #4E5F74;
+    margin-bottom: 22px;
+    line-height: 1.55;
 }
 
 .form-group {
-    margin-bottom: 18px;
+    margin-bottom: 16px;
 }
 
 .form-group label {
@@ -66,47 +150,60 @@ body {
 
 .form-group input {
     width: 100%;
-    padding: 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
+    padding: 13px 14px;
+    border: 1.5px solid #C7D2DF;
+    border-radius: 12px;
     font-size: 15px;
+    font-family: inherit;
+    background: #FBFCFE;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-group input:focus {
-    outline: 2px solid #00865a;
-    border-color: transparent;
+    outline: none;
+    border-color: #1FA463;
+    box-shadow: 0 0 0 4px rgba(31, 164, 99, 0.16);
 }
 
-.auth-container button {
+.auth-container button,
+.logout-button {
     width: 100%;
-    padding: 13px;
-    background: #006747;
+    padding: 13px 18px;
+    background: #168550;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 999px;
     font-size: 16px;
-    font-weight: bold;
+    font-weight: 700;
+    font-family: inherit;
     cursor: pointer;
+    box-shadow: 0 10px 28px -8px rgba(22, 133, 80, 0.7);
+    transition: background 0.24s cubic-bezier(0.22, 1, 0.36, 1), transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.auth-container button:hover {
-    background: #004d36;
+.auth-container button:hover,
+.logout-button:hover {
+    background: #126A41;
+    transform: translateY(-2px);
 }
 
 .auth-container a {
-    color: #006747;
-    font-weight: bold;
+    color: #168550;
+    font-weight: 700;
+}
+
+.auth-container a:hover {
+    color: #126A41;
 }
 
 .error-message {
-    background: #fff0f0;
-    color: #b42318;
-    padding: 12px;
-    border-radius: 6px;
+    background: #FEF1F0;
+    color: #9C1D14;
+    padding: 12px 14px;
+    border-radius: 12px;
     margin-bottom: 18px;
     font-size: 14px;
 }
-
 
 /* =====================================
    LOGIN PAGE BACKGROUND
@@ -528,4 +625,62 @@ body.login-page {
         margin-bottom: 15px;
     }
 
+}
+
+.success-message {
+    background: #EDFBF2;
+    color: #126A41;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+    font-size: 14px;
+}
+
+.dashboard-container {
+    max-width: 720px;
+}
+
+.dashboard-card {
+    background: #ffffff;
+    padding: 36px;
+    border-radius: 28px;
+    box-shadow: 0 24px 60px rgb(2 8 18 / 0.35);
+    animation: cardIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    position: relative;
+}
+
+.dashboard-card::before {
+    content: "";
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    top: 0;
+    height: 4px;
+    border-radius: 0 0 8px 8px;
+    background: linear-gradient(90deg, #071E3A 0%, #0B5CAD 48%, #1FA463 100%);
+}
+
+.dashboard-card h2 {
+    color: #168550;
+    margin: 8px 0 16px;
+}
+
+.dashboard-card p {
+    text-align: left;
+    margin-bottom: 14px;
+}
+
+.logout-button {
+    width: auto;
+    margin-top: 8px;
+    padding: 12px 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
 }

@@ -1,196 +1,141 @@
 <?php
-require_once '../../backend/config/database.php';
-require_once '../../backend/config/session.php';
+declare(strict_types=1);
 
-// Session Check
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../auth/login.php");
-    exit;
-}
+require_once dirname(__DIR__, 2) . '/components/admin-layout.php';
+require_once dirname(__DIR__, 2) . '/backend/config/database.php';
 
-$activePage = 'dashboard';
-$loggedInUserName = $_SESSION['user_name'] ?? 'Admin User';
-$firstLetter = strtoupper(substr($loggedInUserName, 0, 1));
+$totalArticles = 0;
+$publishedMonth = 0;
+$activeCategories = 0;
+$recentArticles = [];
+$categoryCounts = [];
+$dbError = '';
 
-// Database Dynamic Stats Queries
 try {
-    $totalNews = $pdo->query("SELECT COUNT(*) FROM articles")->fetchColumn() ?: 0;
-    $publishedThisMonth = $pdo->query("SELECT COUNT(*) FROM articles WHERE status = 'published' AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())")->fetchColumn() ?: 0;
-    $activeCategories = $pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn() ?: 0;
-
-    // Fetch 5 Most Recent Articles
-    $recentStmt = $pdo->query("
-        SELECT articles.*, users.name as author_name 
-        FROM articles 
-        LEFT JOIN users ON articles.author_id = users.id 
-        ORDER BY articles.created_at DESC 
-        LIMIT 5
-    ");
-    $recentArticles = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Fetch Categories Summary
-    $catStmt = $pdo->query("
-        SELECT categories.name, COUNT(articles.id) as article_count 
-        FROM categories 
-        LEFT JOIN articles ON categories.id = articles.category_id 
-        GROUP BY categories.id 
-        LIMIT 5
-    ");
-    $categoriesSummary = $catStmt->fetchAll(PDO::FETCH_ASSOC);
-
-} catch (PDOException $e) {
-    $totalNews = 0;
-    $publishedThisMonth = 0;
-    $activeCategories = 0;
-    $recentArticles = [];
-    $categoriesSummary = [];
+    $totalArticles = (int) $pdo->query("SELECT COUNT(*) FROM articles")->fetchColumn();
+} catch (Throwable $e) {
+    $dbError = $e->getMessage();
 }
+
+try {
+    $stmt = $pdo->query("SELECT COUNT(*) FROM articles WHERE LOWER(status) IN ('published','approved') AND created_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')");
+    $publishedMonth = (int) $stmt->fetchColumn();
+} catch (Throwable $e) {
+    $publishedMonth = $totalArticles;
+}
+
+try {
+    $activeCategories = (int) $pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn();
+    $categoryCounts = $pdo->query("
+        SELECT c.name, COUNT(a.id) AS article_count
+        FROM categories c
+        LEFT JOIN articles a ON a.category_id = c.id
+        GROUP BY c.id, c.name
+        ORDER BY c.name ASC
+    ")->fetchAll();
+} catch (Throwable $e) {
+    $categoryCounts = [];
+}
+
+try {
+    $recentArticles = $pdo->query("
+        SELECT a.title, a.status, a.created_at, COALESCE(u.full_name, u.name, 'Author') AS author_name
+        FROM articles a
+        LEFT JOIN users u ON a.author_id = u.id
+        ORDER BY a.created_at DESC
+        LIMIT 5
+    ")->fetchAll();
+} catch (Throwable $e) {
+    try {
+        $recentArticles = $pdo->query("SELECT title, status, created_at, 'Author' AS author_name FROM articles ORDER BY id DESC LIMIT 5")->fetchAll();
+    } catch (Throwable $e2) {
+        $recentArticles = [];
+    }
+}
+
+admin_render_start('dashboard.php', 'Dashboard');
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - NSBM NewsDesk</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css?v=2.1">
-    
-    <!-- Anti-Flicker Script: Prevents sidebar expanding before collapse on tab switch -->
-    <script>
-        if (localStorage.getItem('sidebar-collapsed') === 'true') {
-            document.documentElement.classList.add('sidebar-collapsed');
-            document.addEventListener('DOMContentLoaded', () => {
-                document.body.classList.add('sidebar-collapsed');
-            });
-        }
-    </script>
-</head>
-<body>
+<?php if ($dbError !== ''): ?>
+    <div class="alert">Database query notice: <?= admin_h($dbError) ?></div>
+<?php endif; ?>
 
-    <?php include '../../components/admin-sidebar.php'; ?>
+<div class="stats">
+    <div class="card stat">
+        <b><?= $totalArticles ?></b>
+        <span>Total News Articles</span>
+    </div>
+    <div class="card stat">
+        <b><?= $publishedMonth ?></b>
+        <span>Published This Month</span>
+    </div>
+    <div class="card stat">
+        <b><?= $activeCategories ?></b>
+        <span>Active Categories</span>
+    </div>
+</div>
 
-    <main class="admin-main">
-        <header class="top-bar">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-                <div class="page-title">
-                    <h1>Admin Dashboard</h1>
-                    <p>admin / dashboard.php</p>
-                </div>
-            </div>
-            
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <div class="user-profile">
-                    <div class="avatar"><?= htmlspecialchars($firstLetter) ?></div>
-                    <span><?= htmlspecialchars($loggedInUserName) ?></span>
-                </div>
-
-                <!-- Secure POST Logout Form -->
-                <form action="../../backend/auth/logout.php" method="POST" style="margin: 0;">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
-                    <button type="submit" class="btn btn-danger btn-sm" style="border-radius: 20px; padding: 6px 14px;">Logout</button>
-                </form>
-            </div>
-        </header>
-
-        <!-- Stats Section -->
-        <section class="stats-grid">
-            <div class="stat-card">
-                <h3>Total News Articles</h3>
-                <div class="number"><?= htmlspecialchars($totalNews) ?></div>
-            </div>
-            <div class="stat-card">
-                <h3>Published This Month</h3>
-                <div class="number"><?= htmlspecialchars($publishedThisMonth) ?></div>
-            </div>
-            <div class="stat-card">
-                <h3>Active Categories</h3>
-                <div class="number"><?= htmlspecialchars($activeCategories) ?></div>
-            </div>
-        </section>
-
-        <!-- Analytics Reserved Area for Tharushika -->
-        <section class="data-card">
-            <div class="card-header">
-                <h2>Analytics</h2>
-            </div>
-            <div class="analytics-placeholder">
-                <p>Section Reserved for Tharushika's Analytics Components.</p>
-            </div>
-        </section>
-
-        <!-- Dynamic Tables Grid -->
-        <div class="dashboard-grid">
-            <!-- Recent News Table -->
-            <div class="data-card">
-                <div class="card-header">
-                    <h2>Recent News Management</h2>
-                    <a href="news.php" class="btn btn-primary btn-sm">View All</a>
-                </div>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Author</th>
-                                <th>Status</th>
-                                <th>Created Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (!empty($recentArticles)): ?>
-                                <?php foreach ($recentArticles as $article): ?>
-                                    <tr>
-                                        <td><strong><?= htmlspecialchars($article['title']) ?></strong></td>
-                                        <td><?= htmlspecialchars($article['author_name'] ?? 'System Admin') ?></td>
-                                        <td>
-                                            <span class="badge badge-<?= strtolower($article['status']) ?>">
-                                                <?= htmlspecialchars(ucfirst($article['status'])) ?>
-                                            </span>
-                                        </td>
-                                        <td><?= date('d M Y', strtotime($article['created_at'])) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr><td colspan="4">No recent articles found.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Categories Summary Table -->
-            <div class="data-card">
-                <div class="card-header">
-                    <h2>Categories Summary</h2>
-                    <a href="categories.php" class="btn btn-primary btn-sm">Manage</a>
-                </div>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Count</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (!empty($categoriesSummary)): ?>
-                                <?php foreach ($categoriesSummary as $cat): ?>
-                                    <tr>
-                                        <td><strong><?= htmlspecialchars($cat['name']) ?></strong></td>
-                                        <td><?= htmlspecialchars($cat['article_count']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr><td colspan="2">No categories available.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+<div class="two">
+    <div class="card pad">
+        <h3 style="font-family:Inter;margin-bottom:10px">Recent News Management</h3>
+        <div class="tw">
+            <table>
+                <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if (!empty($recentArticles)): ?>
+                    <?php foreach ($recentArticles as $row): ?>
+                        <?php $st = (string) ($row['status'] ?? 'Draft'); ?>
+                        <tr>
+                            <td><?= admin_h($row['title'] ?? '') ?></td>
+                            <td><?= admin_h($row['author_name'] ?? 'Author') ?></td>
+                            <td>
+                                <span class="pill <?= strtolower($st) === 'published' ? 'ok' : 'am' ?>">
+                                    <?= admin_h(ucfirst($st)) ?>
+                                </span>
+                            </td>
+                            <td><?= admin_h(!empty($row['created_at']) ? date('d M Y', strtotime((string) $row['created_at'])) : '—') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr><td colspan="4" class="meta">No recent articles found.</td></tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
         </div>
-    </main>
+    </div>
 
-    <script src="../../assets/js/admin.js"></script>
-</body>
-</html>
+    <div class="card pad">
+        <h3 style="font-family:Inter;margin-bottom:10px">Categories Summary</h3>
+        <div class="tw">
+            <table>
+                <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Articles</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if (!empty($categoryCounts)): ?>
+                    <?php foreach ($categoryCounts as $c): ?>
+                        <tr>
+                            <td><b><?= admin_h($c['name'] ?? '') ?></b></td>
+                            <td><span class="pill cnt"><?= (int) ($c['article_count'] ?? 0) ?></span></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr><td colspan="2" class="meta">No categories available.</td></tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<?php admin_render_end(false); ?>
