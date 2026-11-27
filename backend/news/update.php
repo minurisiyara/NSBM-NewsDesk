@@ -152,31 +152,31 @@ if ($userRole === 'student') {
 
 if ($userRole === 'moderator') {
     if ((int) $article['author_id'] === $userId) {
-        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('You cannot review your own article.'));
+        header('Location: ../../pages/moderator/approvals.php?error=' . rawurlencode('You cannot review your own article.'));
         exit;
     }
 
     if ($article['status'] !== 'pending') {
-        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('Only pending articles can be reviewed.'));
+        header('Location: ../../pages/moderator/approvals.php?error=' . rawurlencode('Only pending articles can be reviewed.'));
         exit;
     }
 
     $action = $_POST['action'] ?? '';
 
     if (!is_string($action) || !in_array($action, ['approve', 'reject'], true)) {
-        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('Choose approve or reject.'));
+        header('Location: ../../pages/moderator/approvals.php?error=' . rawurlencode('Choose approve or reject.'));
         exit;
     }
 
     $rejectionReason = trim($_POST['rejection_reason'] ?? '');
 
     if (mb_strlen($rejectionReason) > 2000) {
-        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('Rejection reason must not exceed 2000 characters.'));
+        header('Location: ../../pages/moderator/approvals.php?error=' . rawurlencode('Rejection reason must not exceed 2000 characters.'));
         exit;
     }
 
     if ($action === 'reject' && $rejectionReason === '') {
-        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('A rejection reason is required.'));
+        header('Location: ../../pages/moderator/approvals.php?error=' . rawurlencode('A rejection reason is required.'));
         exit;
     }
 
@@ -224,7 +224,7 @@ if ($userRole === 'moderator') {
 
         if ($updateQuery->rowCount() !== 1) {
             $pdo->rollBack();
-            header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('The article could not be updated. Refresh and try again.'));
+            header('Location: ../../pages/moderator/approvals.php?error=' . rawurlencode('The article could not be updated. Refresh and try again.'));
             exit;
         }
 
@@ -242,7 +242,7 @@ if ($userRole === 'moderator') {
 
         $pdo->commit();
 
-        header('Location: ../pages/moderator/approvals.php?success=' . rawurlencode($successMsg));
+        header('Location: ../../pages/moderator/approvals.php?success=' . rawurlencode($successMsg));
         exit;
 
     } catch (Throwable $e) {
@@ -250,7 +250,7 @@ if ($userRole === 'moderator') {
             $pdo->rollBack();
         }
         error_log('Article moderation failed: ' . $e->getMessage());
-        header('Location: ../pages/moderator/approvals.php?error=' . rawurlencode('Unable to process article review. Please try again.'));
+        header('Location: ../../pages/moderator/approvals.php?error=' . rawurlencode('Unable to process article review. Please try again.'));
         exit;
     }
 }
