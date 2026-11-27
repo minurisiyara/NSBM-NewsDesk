@@ -153,7 +153,10 @@ admin_render_start('news.php', 'News Management');
             <option value="<?= admin_h($c['name']) ?>"><?= admin_h($c['name']) ?></option>
         <?php endforeach; ?>
     </select>
-    <button type="button" class="btn" onclick="AdminUI.openModal('addNewsModal')">+ Add News</button>
+    <button type="button" class="btn"
+    onclick="openAddNewsModal()">
+    + Add News
+</button>
 </div>
 
 <div class="card tw">
@@ -185,7 +188,7 @@ admin_render_start('news.php', 'News Management');
                     <td><?= admin_h(!empty($art['created_at']) ? date('d M Y', strtotime((string) $art['created_at'])) : '—') ?></td>
                     <td style="white-space:nowrap;display:inline-flex;gap:6px">
                         <?php if ($st !== 'published'): ?>
-                            <form method="POST" style="display:inline">
+                            <form method="POST" onsubmit="return validateNewsForm()">
                                 <input type="hidden" name="action" value="publish">
                                 <input type="hidden" name="id" value="<?= $aid ?>">
                                 <button type="submit" class="btn s">Publish</button>

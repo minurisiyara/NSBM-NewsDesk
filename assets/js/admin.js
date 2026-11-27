@@ -1,215 +1,174 @@
-/**
- * NSBM NewsDesk - Admin Panel Interactive Scripts
- */
 
-// Apply collapsed state immediately when script loads (before DOMContentLoaded)
-(function () {
-    const isCollapsed = localStorage.getItem('nsbm-admin-sidebar-collapsed') === 'true';
-    if (isCollapsed) {
-        document.documentElement.classList.add('sidebar-collapsed', 'no-sidebar-transition');
-        if (document.body) {
-            document.body.classList.add('sidebar-collapsed');
+'use strict';
+
+/* =====================================
+   NSBM NEWSDESK - ADMIN UI
+===================================== */
+
+/* Modal Controller */
+window.AdminUI = {
+    openModal(id) {
+        const modal = document.getElementById(id);
+
+        if (!modal) {
+            console.error('Modal not found:', id);
+            return;
         }
+
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        const input = modal.querySelector(
+            'input:not([type="hidden"]), textarea, select'
+        );
+
+        if (input) {
+            setTimeout(() => input.focus(), 100);
+        }
+    },
+
+    closeModal(id) {
+        const modal = document.getElementById(id);
+
+        if (!modal) return;
+
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
     }
-})();
+};
 
-document.addEventListener('DOMContentLoaded', () => {
-    const adminSidebar = document.getElementById('adminSidebar');
-    const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+/* =====================================
+   DOM READY
+===================================== */
 
-    // Sync state on body as well
-    if (localStorage.getItem('nsbm-admin-sidebar-collapsed') === 'true') {
-        document.documentElement.classList.add('sidebar-collapsed');
-        document.body.classList.add('sidebar-collapsed');
-    }
+document.addEventListener('DOMContentLoaded', function () {
 
-    // Re-enable smooth transitions AFTER initial page paint completes
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            document.documentElement.classList.remove('no-sidebar-transition');
-        });
-    });
+    /* IMPORTANT:
+       Sidebar events are handled by admin-layout.php.
+       Do not add another sidebar click listener here.
+    */
 
-    // Toggle collapse ONLY when the sidebar hamburger button is clicked
-    if (sidebarToggleBtn) {
-        sidebarToggleBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (window.innerWidth <= 768 && adminSidebar) {
-                adminSidebar.classList.remove('mobile-open');
-            } else {
-                const isNowCollapsed = !document.documentElement.classList.contains('sidebar-collapsed');
-                document.documentElement.classList.toggle('sidebar-collapsed', isNowCollapsed);
-                document.body.classList.toggle('sidebar-collapsed', isNowCollapsed);
-                localStorage.setItem('nsbm-admin-sidebar-collapsed', String(isNowCollapsed));
-            }
-        });
-    }
-
-    // Mobile Top-Bar Hamburger Toggle
-    if (mobileMenuBtn && adminSidebar) {
-        mobileMenuBtn.addEventListener('click', () => {
-            adminSidebar.classList.toggle('mobile-open');
-        });
-    }
-
-    // Close modals when clicking outside the modal box
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-        backdrop.addEventListener('click', (e) => {
-            if (e.target === backdrop) {
-                backdrop.classList.remove('open');
+    /* Close modal on backdrop click */
+    document.querySelectorAll('.mod').forEach(modal => {
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                modal.classList.remove('open');
+                document.body.style.overflow = '';
             }
         });
     });
+
+    /* Escape key closes modal */
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            document.querySelectorAll('.mod.open').forEach(modal => {
+                modal.classList.remove('open');
+            });
+
+            document.body.style.overflow = '';
+        }
+    });
+
+    /* News search */
+    const search = document.getElementById('adminSearchInput');
+    const statusFilter = document.getElementById('adminStatusFilter');
+    const categoryFilter = document.getElementById('adminCategoryFilter');
+
+    function filterNews() {
+        const keyword = search?.value.toLowerCase().trim() || '';
+        const status = statusFilter?.value.toLowerCase() || '';
+        const category = categoryFilter?.value.toLowerCase() || '';
+
+        document.querySelectorAll('[data-filter-row]').forEach(row => {
+            const text = (row.dataset.search || '').toLowerCase();
+            const rowStatus = (row.dataset.status || '').toLowerCase();
+            const rowCategory = (row.dataset.category || '').toLowerCase();
+
+            const matches =
+                text.includes(keyword) &&
+                (!status || status === rowStatus) &&
+                (!category || category === rowCategory);
+
+            row.style.display = matches ? '' : 'none';
+        });
+    }
+
+    [search, statusFilter, categoryFilter].forEach(element => {
+        if (element) {
+            element.addEventListener('input', filterNews);
+            element.addEventListener('change', filterNews);
+        }
+    });
+
 });
 
-/* =========================================================
-   NEWS MANAGEMENT MODAL & VALIDATION
-   ========================================================= */
+/* =====================================
+   NEWS MODAL
+===================================== */
+
 function openAddNewsModal() {
-    const modal = document.getElementById('newsModal');
-    if (!modal) return;
+    const form = document.querySelector('#addNewsModal form');
 
-    document.getElementById('newsModalTitle').textContent = 'Add News Article';
-    document.getElementById('newsId').value = '0';
-    document.getElementById('newsTitle').value = '';
-    document.getElementById('newsCategory').value = '';
-    document.getElementById('newsStatus').value = 'draft';
-    document.getElementById('newsSummary').value = '';
-    document.getElementById('newsImage').value = '';
-    document.getElementById('newsContent').value = '';
-    document.getElementById('newsFeatured').checked = false;
-    document.getElementById('newsBreaking').checked = false;
+    if (form) form.reset();
 
-    modal.classList.add('open');
-}
-
-function openEditNewsModal(article) {
-    const modal = document.getElementById('newsModal');
-    if (!modal) return;
-
-    document.getElementById('newsModalTitle').textContent = 'Edit News Article';
-    document.getElementById('newsId').value = article.id;
-    document.getElementById('newsTitle').value = article.title;
-    document.getElementById('newsCategory').value = article.category_id;
-    document.getElementById('newsStatus').value = article.status;
-    document.getElementById('newsSummary').value = article.summary;
-    document.getElementById('newsImage').value = article.image_path;
-    document.getElementById('newsContent').value = article.content;
-    document.getElementById('newsFeatured').checked = Boolean(article.is_featured);
-    document.getElementById('newsBreaking').checked = Boolean(article.is_breaking);
-
-    modal.classList.add('open');
+    AdminUI.openModal('addNewsModal');
 }
 
 function closeNewsModal() {
-    const modal = document.getElementById('newsModal');
-    if (modal) {
-        modal.classList.remove('open');
-    }
+    AdminUI.closeModal('addNewsModal');
 }
 
 function validateNewsForm() {
-    const title = document.getElementById('newsTitle').value.trim();
-    const category = document.getElementById('newsCategory').value;
-    const content = document.getElementById('newsContent').value.trim();
+    const form = document.querySelector('#addNewsModal form');
 
-    if (!title || !category || !content) {
-        alert('Please fill in all required fields (Title, Category, and Content).');
+    if (!form) return false;
+
+    const title = form.querySelector('[name="title"]');
+
+    if (!title || !title.value.trim()) {
+        alert('Please enter the news title.');
         return false;
     }
+
     return true;
 }
 
-/* =========================================================
-   CATEGORY MANAGEMENT POPUP MODAL & VALIDATION
-   ========================================================= */
+/* =====================================
+   CATEGORY MODAL
+===================================== */
+
 function openAddCategoryModal() {
-    const modal = document.getElementById('categoryModal');
-    if (!modal) return;
-
-    document.getElementById('categoryModalTitle').textContent = 'Add Category';
-    document.getElementById('categoryId').value = '0';
-    document.getElementById('categoryName').value = '';
-    document.getElementById('categoryDescription').value = '';
-    document.getElementById('saveCategoryBtn').textContent = 'Save Category';
-
-    modal.classList.add('open');
-}
-
-function openEditCategoryModal(category) {
-    const modal = document.getElementById('categoryModal');
-    if (!modal) return;
-
-    document.getElementById('categoryModalTitle').textContent = 'Edit Category';
-    document.getElementById('categoryId').value = category.id;
-    document.getElementById('categoryName').value = category.name;
-    document.getElementById('categoryDescription').value = category.description;
-    document.getElementById('saveCategoryBtn').textContent = 'Update Category';
-
-    modal.classList.add('open');
+    AdminUI.openModal('categoryModal');
 }
 
 function closeCategoryModal() {
-    const modal = document.getElementById('categoryModal');
-    if (modal) {
-        modal.classList.remove('open');
-    }
+    AdminUI.closeModal('categoryModal');
 }
 
 function validateCategoryForm() {
-    const name = document.getElementById('categoryName').value.trim();
-    if (!name) {
+    const name = document.getElementById('categoryName');
+
+    if (!name || !name.value.trim()) {
         alert('Please enter a category name.');
         return false;
     }
+
     return true;
 }
 
-function confirmDeleteCategory(articleCount, categoryName) {
-    if (articleCount > 0) {
+/* =====================================
+   DELETE CATEGORY
+===================================== */
+
+function confirmDeleteCategory(count, name) {
+    if (Number(count) > 0) {
         alert(
-            `Cannot delete "${categoryName}" because it currently has ${articleCount} linked article(s).\n\nPlease reassign or delete those articles first.`
+            'Cannot delete "' + name +
+            '" because articles are linked to this category.'
         );
+
         return false;
     }
-    return confirm(`Are you sure you want to delete the "${categoryName}" category?`);
-}
 
-//users
-
-/* =========================================================
-   USER MANAGEMENT POPUP MODAL & VALIDATION
-   ========================================================= */
-function openAddUserModal() {
-    const modal = document.getElementById('userModal');
-    if (!modal) return;
-
-    document.getElementById('userName').value = '';
-    document.getElementById('userEmail').value = '';
-    document.getElementById('userPassword').value = '';
-    document.getElementById('userRole').value = 'student';
-
-    modal.classList.add('open');
-}
-
-function closeUserModal() {
-    const modal = document.getElementById('userModal');
-    if (modal) {
-        modal.classList.remove('open');
-    }
-}
-
-function validateUserForm() {
-    const name = document.getElementById('userName').value.trim();
-    const email = document.getElementById('userEmail').value.trim();
-    const password = document.getElementById('userPassword').value;
-
-    if (!name || !email || password.length < 6) {
-        alert('Please enter a valid name, email, and a password with at least 6 characters.');
-        return false;
-    }
-    return true;
+    return confirm('Delete category "' + name + '"?');
 }
