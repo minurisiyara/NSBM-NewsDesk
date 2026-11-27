@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Session
 require_once dirname(__DIR__, 2) . '/backend/config/session.php';
 
 // Check login
@@ -16,13 +17,26 @@ if (($_SESSION['user_role'] ?? '') !== 'student') {
     exit('Access denied.');
 }
 
+// Student details
 $name = $_SESSION['user_name'] ?? 'Student';
 $userId = (int) $_SESSION['user_id'];
+
+// Active sidebar page
+$activePage = 'dashboard';
+
+// Generate CSRF token
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 // Database connection
 require_once dirname(__DIR__, 2) . '/backend/config/database.php';
 
-// Get article statistics
+
+// ==========================================
+// GET ARTICLE STATISTICS
+// ==========================================
+
 $stmt = $pdo->prepare("
     SELECT
         COUNT(*) AS total,
@@ -34,9 +48,14 @@ $stmt = $pdo->prepare("
 ");
 
 $stmt->execute([$userId]);
-$stats = $stmt->fetch();
 
-// Get recent submissions
+$stats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+
+// ==========================================
+// GET RECENT SUBMISSIONS
+// ==========================================
+
 $stmt = $pdo->prepare("
     SELECT
         a.title,
@@ -51,9 +70,14 @@ $stmt = $pdo->prepare("
 ");
 
 $stmt->execute([$userId]);
-$recentArticles = $stmt->fetchAll();
 
-// Get saved articles count
+$recentArticles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+// ==========================================
+// GET BOOKMARK COUNT
+// ==========================================
+
 $stmt = $pdo->prepare("
     SELECT COUNT(*)
     FROM bookmarks
@@ -61,6 +85,7 @@ $stmt = $pdo->prepare("
 ");
 
 $stmt->execute([$userId]);
+
 $savedCount = (int) $stmt->fetchColumn();
 
 ?>
@@ -69,115 +94,93 @@ $savedCount = (int) $stmt->fetchColumn();
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    
     <title>Student Dashboard | NSBM NewsDesk</title>
 
-    <link rel="stylesheet" href="../../assets/css/student.css">
+    <!-- Main Student CSS -->
+
+    <link
+        rel="stylesheet"
+        href="../../assets/css/student.css"
+    >
+
+    <!-- Student Logo CSS -->
+
+    <link
+        rel="stylesheet"
+        href="../../assets/css/student-logo.css?v=3"
+    >
+
+    <!-- Student Topbar CSS -->
+
+    <link
+        rel="stylesheet"
+        href="../../assets/css/student-topbar.css?v=2"
+    >
 
 </head>
 
 <body>
 
-    <!-- Sidebar -->
 
-    <aside class="sidebar">
+    <!-- ======================================
+         COMMON STUDENT SIDEBAR
+    ======================================= -->
 
-        <div class="brand">
+    <?php
 
-            <div class="brand-icon">N</div>
+    include dirname(__DIR__, 2) . '/components/student-sidebar.php';
 
-            <div>
-                <h2>NSBM</h2>
-                <span>NewsDesk Portal</span>
-            </div>
-
-        </div>
-
-        <nav class="sidebar-nav">
-
-            <a href="dashboard.php" class="active">
-                Dashboard
-            </a>
-
-            <a href="my-submissions.php">
-                My Submissions
-            </a>
-
-            <a href="submit-article.php">
-                Submit Article
-            </a>
-
-            <a href="bookmarks.php">
-                Saved Research
-            </a>
-
-            <a href="profile.php">
-                Scholar Profile
-            </a>
-
-        </nav>
-
-        <div class="sidebar-bottom">
-
-            <a href="../../index.php">
-                Back to Journal
-            </a>
-
-            <span>NSBM Green University</span>
-
-        </div>
-
-    </aside>
+    ?>
 
 
-    <!-- Main Content -->
+    <!-- ======================================
+         MAIN CONTENT
+    ======================================= -->
 
     <div class="main-content">
 
-        <!-- Top Navigation -->
 
-        <header class="topbar">
+        <!-- ==================================
+             COMMON STUDENT TOPBAR
+        =================================== -->
 
-            <span class="portal-label">STUDENT PORTAL</span>
+        <?php
 
-            <div class="topbar-right">
+        include dirname(__DIR__, 2) . '/components/student-topbar.php';
 
-                <span>
-                    <?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>
-                </span>
+        ?>
 
-                <form action="../../backend/auth/logout.php" method="POST">
 
-                    <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                    >
-
-                    <button type="submit" class="logout-button">
-                        Log Out
-                    </button>
-
-                </form>
-
-            </div>
-
-        </header>
-
+        <!-- Dashboard Content -->
 
         <main class="dashboard-content">
 
-            <!-- Welcome Banner -->
+
+            <!-- ==================================
+                 WELCOME BANNER
+            =================================== -->
 
             <section class="welcome-banner">
 
-                <span class="welcome-label">STUDENT DASHBOARD</span>
+                <span class="welcome-label">
+                    STUDENT DASHBOARD
+                </span>
 
                 <h1>
-                    Welcome back, <?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>!
+
+                    Welcome back,
+
+                    <?= htmlspecialchars(
+                        $name,
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>!
+
                 </h1>
 
                 <p>
@@ -187,11 +190,17 @@ $savedCount = (int) $stmt->fetchColumn();
 
                 <div class="welcome-actions">
 
-                    <a href="my-submissions.php" class="secondary-button">
+                    <a
+                        href="my-submissions.php"
+                        class="secondary-button"
+                    >
                         View My Submissions
                     </a>
 
-                    <a href="submit-article.php" class="primary-button">
+                    <a
+                        href="submit-article.php"
+                        class="primary-button"
+                    >
                         + Submit New Article
                     </a>
 
@@ -200,21 +209,29 @@ $savedCount = (int) $stmt->fetchColumn();
             </section>
 
 
-            <!-- Statistics -->
+            <!-- ==================================
+                 ARTICLE STATISTICS
+            =================================== -->
 
             <section class="statistics-section">
 
                 <div class="section-heading">
 
                     <div>
+
                         <span>YOUR PERFORMANCE</span>
+
                         <h2>Article Overview</h2>
+
                     </div>
 
                 </div>
 
 
                 <div class="statistics-grid">
+
+
+                    <!-- Total Articles -->
 
                     <div class="stat-card">
 
@@ -235,6 +252,8 @@ $savedCount = (int) $stmt->fetchColumn();
                     </div>
 
 
+                    <!-- Approved Articles -->
+
                     <div class="stat-card">
 
                         <div class="stat-icon green">
@@ -253,6 +272,8 @@ $savedCount = (int) $stmt->fetchColumn();
 
                     </div>
 
+
+                    <!-- Pending Articles -->
 
                     <div class="stat-card">
 
@@ -273,6 +294,8 @@ $savedCount = (int) $stmt->fetchColumn();
                     </div>
 
 
+                    <!-- Rejected Articles -->
+
                     <div class="stat-card">
 
                         <div class="stat-icon red">
@@ -291,12 +314,15 @@ $savedCount = (int) $stmt->fetchColumn();
 
                     </div>
 
+
                 </div>
 
             </section>
 
 
-            <!-- Dashboard Main Grid -->
+            <!-- ==================================
+                 DASHBOARD MAIN GRID
+            =================================== -->
 
             <div class="dashboard-grid">
 
@@ -308,8 +334,13 @@ $savedCount = (int) $stmt->fetchColumn();
                     <div class="section-heading">
 
                         <div>
+
                             <span>MANUSCRIPT FLOW</span>
-                            <h2>Recent Submissions & Editorial Status</h2>
+
+                            <h2>
+                                Recent Submissions & Editorial Status
+                            </h2>
+
                         </div>
 
                         <a href="my-submissions.php">
@@ -340,24 +371,34 @@ $savedCount = (int) $stmt->fetchColumn();
                                         </span>
 
                                         <h3>
+
                                             <?= htmlspecialchars(
                                                 $article['title'],
                                                 ENT_QUOTES,
                                                 'UTF-8'
                                             ) ?>
+
                                         </h3>
 
                                         <p>
+
                                             Submitted on
+
                                             <?= htmlspecialchars(
-                                                date('M d, Y', strtotime($article['created_at'])),
+                                                date(
+                                                    'M d, Y',
+                                                    strtotime($article['created_at'])
+                                                ),
                                                 ENT_QUOTES,
                                                 'UTF-8'
                                             ) ?>
+
                                         </p>
 
                                     </div>
 
+
+                                    <!-- Article Status -->
 
                                     <span class="status-badge <?= htmlspecialchars(
                                         $article['status'],
@@ -379,7 +420,11 @@ $savedCount = (int) $stmt->fetchColumn();
 
                         </div>
 
+
                     <?php else: ?>
+
+
+                        <!-- Empty State -->
 
                         <div class="empty-state">
 
@@ -390,24 +435,33 @@ $savedCount = (int) $stmt->fetchColumn();
                                 by submitting your first article.
                             </p>
 
-                            <a href="submit-article.php" class="primary-button">
+                            <a
+                                href="submit-article.php"
+                                class="primary-button"
+                            >
                                 Submit Your First Article
                             </a>
 
                         </div>
+
 
                     <?php endif; ?>
 
                 </section>
 
 
-                <!-- Right Information Panel -->
+                <!-- ==================================
+                     RIGHT INFORMATION PANEL
+                =================================== -->
 
                 <aside class="information-panel">
 
+
+                    <!-- Bookmarks -->
+
                     <div class="info-card">
 
-                        <h3>Saved Research</h3>
+                        <h3>Bookmarks</h3>
 
                         <p class="saved-number">
                             <?= $savedCount ?>
@@ -418,11 +472,13 @@ $savedCount = (int) $stmt->fetchColumn();
                         </p>
 
                         <a href="bookmarks.php">
-                            Manage Saved Research →
+                            Manage Bookmarks →
                         </a>
 
                     </div>
 
+
+                    <!-- Editorial Guidance -->
 
                     <div class="info-card help-card">
 
@@ -438,6 +494,7 @@ $savedCount = (int) $stmt->fetchColumn();
                         </a>
 
                     </div>
+
 
                 </aside>
 

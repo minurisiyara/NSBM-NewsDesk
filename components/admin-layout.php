@@ -79,6 +79,15 @@ function admin_render_start(string $activePage, string $pageTitle): void
                     <small class="brand-sub">Admin</small>
                 </span>
             </a>
+                <button
+                    type="button"
+                    class="sidebar-toggle-btn"
+                    id="sidebarToggleBtn"
+                    title="Toggle Sidebar"
+                    aria-label="Toggle Sidebar"
+                >
+                    &#9776;
+                </button>
 
             <div class="prof">
                 <span class="av"><?= admin_h($initial) ?></span>
@@ -99,7 +108,7 @@ function admin_render_start(string $activePage, string $pageTitle): void
 
         <div class="main">
             <header class="top">
-                <button type="button" class="burger" id="sidebarBurger" aria-label="Toggle Menu">☰</button>
+            <button type="button" class="burger" id="sidebarBurger" aria-label="Toggle Menu">&#9776;</button>
                 <h2><?= admin_h($pageTitle) ?></h2>
                 <div class="topbar-right">
                     <span class="av"><?= admin_h($initial) ?></span>
@@ -133,10 +142,49 @@ function admin_render_end(bool $includeCharts = false): void
         const burger = document.getElementById('sidebarBurger');
         const toggleBtn = document.getElementById('sidebarToggleBtn');
 
+        if (!sidebar) return;
+
+        const storageKey = 'nsbm-admin-sidebar-collapsed';
+        const isMobile = () => window.matchMedia('(max-width: 820px)').matches;
+
+        // Restore saved desktop sidebar state
+        try {
+            if (!isMobile() && localStorage.getItem(storageKey) === 'true') {
+                document.documentElement.classList.add('sidebar-collapsed');
+                document.body.classList.add('sidebar-collapsed');
+            }
+        } catch (error) {
+            console.warn('Could not restore sidebar preference:', error);
+        }
+
+        // Desktop collapse / expand
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                if (isMobile()) {
+                    setDrawer(!sidebar.classList.contains('open'));
+                    return;
+                }
+
+                const collapsed = document.body.classList.toggle('sidebar-collapsed');
+                document.documentElement.classList.toggle('sidebar-collapsed', collapsed);
+
+                try {
+                    localStorage.setItem(storageKey, String(collapsed));
+                } catch (error) {
+                    console.warn('Could not save sidebar preference:', error);
+                }
+            });
+        }
+
+        // Mobile drawer
         function setDrawer(open) {
-            if (!sidebar) return;
             sidebar.classList.toggle('open', open);
-            if (backdrop) backdrop.classList.toggle('show', open);
+
+            if (backdrop) {
+                backdrop.classList.toggle('show', open);
+            }
+
+            document.body.style.overflow = open ? 'hidden' : '';
         }
 
         if (burger) {
@@ -144,19 +192,21 @@ function admin_render_end(bool $includeCharts = false): void
                 setDrawer(!sidebar.classList.contains('open'));
             });
         }
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                setDrawer(!sidebar.classList.contains('open'));
-            });
-        }
+
         if (backdrop) {
             backdrop.addEventListener('click', () => setDrawer(false));
         }
-        if (sidebar) {
-            sidebar.querySelectorAll('nav a').forEach((link) => {
-                link.addEventListener('click', () => setDrawer(false));
-            });
-        }
+
+        sidebar.querySelectorAll('nav a').forEach((link) => {
+            link.addEventListener('click', () => setDrawer(false));
+        });
+
+        // Close the mobile drawer when switching to desktop
+        window.addEventListener('resize', () => {
+            if (!isMobile()) {
+                setDrawer(false);
+            }
+        });
     })();
     </script>
     </body>

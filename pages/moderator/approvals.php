@@ -130,25 +130,25 @@ function e(string $value): string
 
         <nav class="sidebar-nav">
             <a href="#overview" class="nav-link active">
-                <span>▦</span> Overview
+                <span>&#9638;</span> Overview
             </a>
 
             <a href="#submissions" class="nav-link">
-                <span>▤</span> Submissions
+                <span>&#9636;</span> Submissions
                 <span class="nav-count"><?= $pendingCount ?></span>
             </a>
 
             <a href="comments.php" class="nav-link">
-                <span>▧</span> Comments
+                <span>&#9639;</span> Comments
             </a>
 
             <a href="reports.php" class="nav-link">
-                <span>⚑</span> Reports
+                <span>&#9873;</span> Reports
                 <span class="nav-count"><?= $pendingReportsCount ?></span>
             </a>
 
             <a href="activity.php" class="nav-link">
-                <span>◷</span> Desk Activity
+                <span>&#9719;</span> Desk Activity
             </a>
         </nav>
 
@@ -168,9 +168,7 @@ function e(string $value): string
         name="csrf_token"
         value="<?= e($_SESSION['csrf_token']) ?>"
     >
-    <button type="submit" class="logout-link" title="Log out">
-        ↗
-    </button>
+    <button type="submit" class="logout-link" title="Log out">&#8618;</button>
 </form>
         </div>
 
@@ -286,7 +284,7 @@ function e(string $value): string
                 <?php if (!$articles): ?>
 
                     <div class="empty-state">
-                        <div class="empty-icon">✓</div>
+                        <div class="empty-icon">&#10003;</div>
                         <h3>You're all caught up.</h3>
                         <p>
                             There are currently no pending articles
@@ -377,25 +375,25 @@ function e(string $value): string
                                             name="csrf_token"
                                             value="<?= e($_SESSION['csrf_token']) ?>"
                                         >
-                                    
+
                                         <input
                                             type="hidden"
                                             name="article_id"
                                             value="<?= (int) $article['id'] ?>"
                                         >
-                                    
+
                                         <details class="rejection-details">
-                                    
+
                                             <summary class="reject-toggle">
                                                 Reject Article
                                             </summary>
-                                    
+
                                             <div class="rejection-content">
-                                    
+
                                                 <label for="reason-<?= (int) $article['id'] ?>">
                                                     Reason for rejection
                                                 </label>
-                                    
+
                                                 <textarea
                                                     id="reason-<?= (int) $article['id'] ?>"
                                                     name="rejection_reason"
@@ -403,7 +401,7 @@ function e(string $value): string
                                                     required
                                                     placeholder="Explain what needs to be corrected in this article..."
                                                 ></textarea>
-                                    
+
                                                 <button
                                                     type="submit"
                                                     name="action"
@@ -413,11 +411,11 @@ function e(string $value): string
                                                 >
                                                     Confirm Rejection
                                                 </button>
-                                    
+
                                             </div>
-                                    
+
                                         </details>
-                                    
+
                                     </form>
 
 
@@ -438,7 +436,7 @@ function e(string $value): string
         </div>
 
         <footer class="moderator-footer">
-            NSBM NewsDesk · Editorial Moderation
+            NSBM NewsDesk &#183; Editorial Moderation
         </footer>
 
     </main>

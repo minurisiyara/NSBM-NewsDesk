@@ -45,7 +45,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $selectedCategory !== '' ? htmlspecialchars($selectedCategory, ENT_QUOTES, 'UTF-8') . ' News' : 'All News' ?> | NSBM NewsDesk</title>
     <link rel="stylesheet" href="../assets/css/news.css">
-    <link rel="stylesheet" href="../assets/css/style.css?v=10">     
+    <link rel="stylesheet" href="../assets/css/style.css?v=10">
     <style>
         .filter-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 28px; }
         .filter-pill { padding: 8px 16px; border-radius: 999px; background: #ffffff; border: 1px solid #d1d5db; color: #374151; text-decoration: none; font-size: 14px; font-weight: 500; }

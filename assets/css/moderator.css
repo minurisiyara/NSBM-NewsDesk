@@ -1,4 +1,4 @@
-
+﻿
 /* ==========================================
    NSBM NEWSDESK - MODERATOR DASHBOARD
    Editorial design
@@ -447,7 +447,7 @@
     font-size: 12px;
     font-style: italic;
 }
-  
+
 
 .moderator-page {
     min-height: 100vh;
@@ -1254,7 +1254,7 @@
 }
 
 .rejection-details[open] .reject-toggle::before {
-    content: "−";
+    content: "âˆ’";
 }
 
 .reject-toggle:hover {

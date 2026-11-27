@@ -1,0 +1,157 @@
+/* ==========================================
+   NSBM STUDENT TOPBAR
+========================================== */
+
+
+/* Topbar Right Section */
+
+.topbar-right {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+}
+
+
+/* Student User Container */
+
+.topbar-user {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    text-decoration: none;
+
+    color: inherit;
+
+}
+
+
+/* Uploaded Profile Photo */
+
+.topbar-profile-photo {
+
+    display: block;
+
+    width: 44px;
+
+    height: 44px;
+
+    min-width: 44px;
+
+    min-height: 44px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    border: 2px solid #e8f5e9;
+
+    box-sizing: border-box;
+
+}
+
+
+/* Default Avatar */
+
+.topbar-avatar {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 44px;
+
+    height: 44px;
+
+    min-width: 44px;
+
+    min-height: 44px;
+
+    border-radius: 50%;
+
+    background: #1b5e20;
+
+    color: #ffffff;
+
+    font-size: 18px;
+
+    font-weight: bold;
+
+    border: 2px solid #e8f5e9;
+
+    box-sizing: border-box;
+
+}
+
+
+/* Student Name */
+
+.topbar-user-name {
+
+    color: #263238;
+
+    font-size: 14px;
+
+    font-weight: 500;
+
+    white-space: nowrap;
+
+}
+
+
+/* Logout Form */
+
+.topbar-right form {
+
+    margin: 0;
+
+}
+
+
+/* Responsive Design */
+
+@media (max-width: 600px) {
+
+    .topbar-right {
+
+        gap: 8px;
+
+    }
+
+    .topbar-user {
+
+        gap: 7px;
+
+    }
+
+    .topbar-profile-photo,
+    .topbar-avatar {
+
+        width: 36px;
+
+        height: 36px;
+
+        min-width: 36px;
+
+        min-height: 36px;
+
+    }
+
+    .topbar-user-name {
+
+        font-size: 12px;
+
+    }
+
+}

@@ -2,64 +2,67 @@
 
 declare(strict_types=1);
 
+// Include configuration files
 require_once dirname(__DIR__) . '/config/session.php';
-
 require_once dirname(__DIR__) . '/config/database.php';
 
+// Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ../../pages/auth/login.php');
     exit;
 }
-$submittedToken = $_POST['csrf_token'] ?? '';
-$sessionToken = $_SESSION['csrf_token'] ?? '';
 
-if (
-    !is_string($submittedToken) ||
-    !is_string($sessionToken) ||
-    $sessionToken === '' ||
-    !hash_equals($sessionToken, $submittedToken)
-) {
-    http_response_code(403);
-    exit('Invalid or expired form token. Please reload the login page and try again.');
-}
-
+// Get form data
 $email = trim($_POST['email'] ?? '');
 $password = $_POST['password'] ?? '';
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
-    $_SESSION['login_errors'] = [
-        'Please enter a valid email address and password.'
-    ];
+// Validate CSRF token
+$sessionToken = $_SESSION['csrf_token'] ?? '';
+$postedToken = $_POST['csrf_token'] ?? '';
 
-    header('Location: ../../pages/auth/login.php');
+if (
+    empty($sessionToken) ||
+    empty($postedToken) ||
+    !hash_equals($sessionToken, $postedToken)
+) {
+    header('Location: ../../pages/auth/login.php?error=1');
+    exit;
+}
+
+// Validate email and password
+if (
+    !filter_var($email, FILTER_VALIDATE_EMAIL) ||
+    $password === ''
+) {
+    header('Location: ../../pages/auth/login.php?error=1');
     exit;
 }
 
 try {
-    $stmt = $pdo->prepare(
-        'SELECT id, name, email, password, role, is_active
-         FROM users
-         WHERE email = :email
-         LIMIT 1'
-    );
+    // Find user from database
+    $sql = "SELECT id, name, email, password, role, is_active
+            FROM users
+            WHERE email = :email
+            LIMIT 1";
 
-    $stmt->execute(['email' => $email]);
-    $user = $stmt->fetch();
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        ':email' => $email
+    ]);
 
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Verify user credentials and account status
     if (
         !$user ||
         !password_verify($password, $user['password']) ||
         (int) $user['is_active'] !== 1
     ) {
-        $_SESSION['login_errors'] = [
-            'Invalid email or password, or your account is inactive.'
-        ];
-
-        header('Location: ../../pages/auth/login.php');
+        header('Location: ../../pages/auth/login.php?error=1');
         exit;
     }
 
-    // Do not establish a session for an unavailable role.
+    // Only allow supported user roles
     if (!in_array($user['role'], ['student', 'moderator', 'admin'], true)) {
         $_SESSION['login_errors'] = [
             'Access for this account type is not available yet.'
@@ -69,32 +72,31 @@ try {
         exit;
     }
 
-    // Regenerate the session ID after successful authentication.
+    // Regenerate session ID after successful authentication
     session_regenerate_id(true);
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
-    $_SESSION['user_id'] = (int) $user['id'];
+    // Store user details in session
+    $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_name'] = $user['name'];
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_role'] = $user['role'];
 
-if ($user['role'] === 'admin') {
-    header('Location: ../../pages/admin/dashboard.php');
-} elseif ($user['role'] === 'moderator') {
-    header('Location: ../../pages/moderator/approvals.php');
-} else {
-    header('Location: ../../pages/student/dashboard.php');
-}
+    // Redirect according to user role
+    if ($user['role'] === 'admin') {
+        header('Location: ../../pages/admin/dashboard.php');
+    } elseif ($user['role'] === 'moderator') {
+        header('Location: ../../pages/moderator/approvals.php');
+    } else {
+        header('Location: ../../pages/student/dashboard.php');
+    }
 
-exit;
+    exit;
 
 } catch (PDOException $e) {
-    error_log('Login failed: ' . $e->getMessage());
+    // Save error to PHP error log
+    error_log($e->getMessage());
 
-    $_SESSION['login_errors'] = [
-        'Unable to log in right now. Please try again.'
-    ];
-
-    header('Location: ../../pages/auth/login.php');
+    // Redirect back to login page
+    header('Location: ../../pages/auth/login.php?error=1');
     exit;
 }

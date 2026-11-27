@@ -1,0 +1,124 @@
+/* ==========================================
+   NSBM STUDENT DASHBOARD LOGO
+========================================== */
+
+
+/* Brand Container */
+
+.sidebar .brand {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+
+    gap: 12px !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+
+    box-sizing: border-box !important;
+
+    overflow: hidden !important;
+}
+
+
+/* NSBM Logo Image */
+
+.sidebar .brand img.brand-logo {
+
+    width: 70px !important;
+    height: 70px !important;
+
+    min-width: 70px !important;
+    min-height: 70px !important;
+
+    max-width: 70px !important;
+    max-height: 70px !important;
+
+    object-fit: contain !important;
+
+    display: block !important;
+
+    flex: 0 0 70px !important;
+
+    position: static !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    transform: none !important;
+
+    border: none !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* Brand Text Container */
+
+.sidebar .brand .brand-text {
+
+    display: flex !important;
+
+    flex-direction: column !important;
+
+    justify-content: center !important;
+
+    min-width: 0 !important;
+
+    flex: 1 !important;
+
+    overflow: hidden !important;
+}
+
+
+/* NSBM Heading */
+
+.sidebar .brand .brand-text h2 {
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    font-size: 20px;
+
+    font-weight: bold;
+
+    line-height: 1.3;
+}
+
+
+/* NewsDesk Portal Text */
+
+.sidebar .brand .brand-text span {
+
+    display: block !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    font-size: 12px;
+
+    line-height: 1.4;
+}
+
+
+/* Mobile Screen */
+
+@media (max-width: 768px) {
+
+    .sidebar .brand img.brand-logo {
+
+        width: 55px !important;
+        height: 55px !important;
+
+        min-width: 55px !important;
+        min-height: 55px !important;
+
+        max-width: 55px !important;
+        max-height: 55px !important;
+
+        flex: 0 0 55px !important;
+    }
+
+}

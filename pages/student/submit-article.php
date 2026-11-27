@@ -19,6 +19,9 @@ if (($_SESSION['user_role'] ?? '') !== 'student') {
 $userId = (int) $_SESSION['user_id'];
 $name = $_SESSION['user_name'] ?? 'Student';
 
+// Active sidebar page
+$activePage = 'submit-article';
+
 // Generate CSRF token
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -34,12 +37,16 @@ $stmt = $pdo->query("
     ORDER BY name ASC
 ");
 
-$categories = $stmt->fetchAll();
+$categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $successMessage = '';
 $errorMessage = '';
 
-// Handle form submission
+
+// ==========================================
+// HANDLE FORM SUBMISSION
+// ==========================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Check CSRF token
@@ -49,15 +56,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         !is_string($submittedToken) ||
         !hash_equals($_SESSION['csrf_token'], $submittedToken)
     ) {
+
         $errorMessage = 'Invalid request. Please refresh the page and try again.';
+
     } else {
 
         $title = trim($_POST['title'] ?? '');
-        $categoryId = filter_input(INPUT_POST, 'category_id', FILTER_VALIDATE_INT);
+
+        $categoryId = filter_input(
+            INPUT_POST,
+            'category_id',
+            FILTER_VALIDATE_INT
+        );
+
         $content = trim($_POST['content'] ?? '');
+
         $action = $_POST['action'] ?? 'submit';
 
+
         // Validate input
+
         if ($title === '' || strlen($title) > 255) {
 
             $errorMessage = 'Please enter a valid article title (maximum 255 characters).';
@@ -76,7 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         } else {
 
+
             // Check category exists
+
             $categoryCheck = $pdo->prepare("
                 SELECT id
                 FROM categories
@@ -93,7 +113,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $imagePath = null;
 
+
                 // Handle image upload
+
                 if (
                     isset($_FILES['image']) &&
                     $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE
@@ -133,7 +155,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 !is_dir($uploadDirectory) &&
                                 !mkdir($uploadDirectory, 0755, true)
                             ) {
+
                                 $errorMessage = 'Unable to create upload directory.';
+
                             } else {
 
                                 $fileName = bin2hex(random_bytes(16))
@@ -161,10 +185,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
+
                 // Save article if there are no errors
+
                 if ($errorMessage === '') {
 
-                    $status = ($action === 'draft') ? 'draft' : 'pending';
+                    $status = ($action === 'draft')
+                        ? 'draft'
+                        : 'pending';
 
                     try {
 
@@ -190,6 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $imagePath
                         ]);
 
+
                         if ($action === 'draft') {
 
                             $successMessage = 'Your article has been saved as a draft.';
@@ -200,15 +229,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         }
 
+
                         // Clear form values
                         $_POST = [];
 
                         // Generate a new CSRF token
                         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
+
                     } catch (PDOException $e) {
 
                         // Remove uploaded file if database save fails
+
                         if ($imagePath !== null) {
 
                             $savedImage = dirname(__DIR__, 2)
@@ -219,9 +251,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             }
                         }
 
-                        error_log('Article submission failed: ' . $e->getMessage());
+                        error_log(
+                            'Article submission failed: ' . $e->getMessage()
+                        );
 
                         $errorMessage = 'Unable to save your article. Please try again.';
+
                     }
                 }
             }
@@ -242,99 +277,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <title>Submit Article | NSBM NewsDesk</title>
 
-    <link rel="stylesheet" href="../../assets/css/student.css">
 
-    <link rel="stylesheet" href="../../assets/css/submit-article.css?v=2">
+    <!-- Main Student CSS -->
+
+    <link rel="stylesheet"
+          href="../../assets/css/student.css">
+
+
+    <!-- Submit Article CSS -->
+
+    <link rel="stylesheet"
+          href="../../assets/css/submit-article.css?v=3">
+
+
+    <!-- Student Logo CSS -->
+
+    <link rel="stylesheet"
+          href="../../assets/css/student-logo.css?v=3">
+
+
+    <!-- Student Topbar CSS -->
+
+    <link rel="stylesheet"
+          href="../../assets/css/student-topbar.css?v=2">
+
 </head>
 
 <body>
 
-    <!-- Sidebar -->
 
-    <aside class="sidebar">
+    <!-- COMMON STUDENT SIDEBAR -->
 
-        <div class="brand">
-
-            <div class="brand-icon">N</div>
-
-            <div>
-                <h2>NSBM</h2>
-                <span>NewsDesk Portal</span>
-            </div>
-
-        </div>
-
-        <nav class="sidebar-nav">
-
-            <a href="dashboard.php">Dashboard</a>
-
-            <a href="my-submissions.php">My Submissions</a>
-
-            <a href="submit-article.php" class="active">Submit Article</a>
-
-            <a href="bookmarks.php">Saved Research</a>
-
-            <a href="profile.php">Scholar Profile</a>
-
-        </nav>
-
-        <div class="sidebar-bottom">
-
-            <a href="../../index.php">Back to Journal</a>
-
-            <span>NSBM Green University</span>
-
-        </div>
-
-    </aside>
+    <?php
+    include dirname(__DIR__, 2) . '/components/student-sidebar.php';
+    ?>
 
 
-    <!-- Main Content -->
+    <!-- MAIN CONTENT -->
 
     <div class="main-content">
 
-        <!-- Topbar -->
 
-        <header class="topbar">
+        <!-- COMMON STUDENT TOPBAR -->
 
-            <span class="portal-label">STUDENT PORTAL</span>
-
-            <div class="topbar-right">
-
-                <span>
-                    <?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>
-                </span>
-
-                <form action="../../backend/auth/logout.php" method="POST">
-
-                    <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="<?= htmlspecialchars(
-                            $_SESSION['csrf_token'],
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>"
-                    >
-
-                    <button type="submit" class="logout-button">
-                        Log Out
-                    </button>
-
-                </form>
-
-            </div>
-
-        </header>
+        <?php
+        include dirname(__DIR__, 2) . '/components/student-topbar.php';
+        ?>
 
 
-        <!-- Submit Article Content -->
+        <!-- SUBMIT ARTICLE CONTENT -->
 
         <main class="dashboard-content">
 
+
+            <!-- Welcome Banner -->
+
             <section class="welcome-banner">
 
-                <span class="welcome-label">ARTICLE CONTRIBUTION</span>
+                <span class="welcome-label">
+                    ARTICLE CONTRIBUTION
+                </span>
 
                 <h1>Submit New Article</h1>
 
@@ -346,16 +348,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </section>
 
 
+            <!-- Article Form -->
+
             <section class="article-form-container">
+
 
                 <div class="form-heading">
 
                     <h2>Article Information</h2>
 
-                    <p>Complete the following details to submit your article.</p>
+                    <p>
+                        Complete the following details to submit your article.
+                    </p>
 
                 </div>
 
+
+                <!-- Success Message -->
 
                 <?php if ($successMessage !== ''): ?>
 
@@ -378,6 +387,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
 
+                <!-- Error Message -->
+
                 <?php if ($errorMessage !== ''): ?>
 
                     <div class="form-message error-message">
@@ -393,12 +404,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
 
+                <!-- Article Form -->
+
                 <form
                     id="articleForm"
                     action="submit-article.php"
                     method="POST"
                     enctype="multipart/form-data"
                 >
+
+
+                    <!-- CSRF Token -->
 
                     <input
                         type="hidden"
@@ -415,7 +431,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="article-group">
 
-                        <label for="title">Article Title</label>
+                        <label for="title">
+                            Article Title
+                        </label>
 
                         <input
                             type="text"
@@ -438,7 +456,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="article-group">
 
-                        <label for="category_id">Select Category</label>
+                        <label for="category_id">
+                            Select Category
+                        </label>
 
                         <select
                             id="category_id"
@@ -446,7 +466,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             required
                         >
 
-                            <option value="">Choose a category</option>
+                            <option value="">
+                                Choose a category
+                            </option>
 
                             <?php foreach ($categories as $category): ?>
 
@@ -477,7 +499,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="article-group">
 
-                        <label for="content">Article Content</label>
+                        <label for="content">
+                            Article Content
+                        </label>
 
                         <textarea
                             id="content"
@@ -498,7 +522,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="article-group">
 
-                        <label for="image">Featured Image (Optional)</label>
+                        <label for="image">
+                            Featured Image (Optional)
+                        </label>
 
                         <input
                             type="file"
@@ -508,8 +534,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         >
 
                         <small>
-                            Allowed formats: JPG, PNG, WEBP. Maximum size: 5 MB.
+                            Allowed formats: JPG, PNG, WEBP.
+                            Maximum size: 5 MB.
                         </small>
+
 
                         <div class="image-preview-container">
 
@@ -525,7 +553,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
 
-                    <!-- Buttons -->
+                    <!-- Form Buttons -->
 
                     <div class="form-buttons">
 
@@ -549,6 +577,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     </div>
 
+
                 </form>
 
             </section>
@@ -558,7 +587,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
 
-    <!-- Image Preview -->
+    <!-- IMAGE PREVIEW SCRIPT -->
 
     <script>
 
@@ -570,8 +599,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const file = this.files[0];
 
             if (!file) {
+
                 imagePreview.src = '';
                 imagePreview.style.display = 'none';
+
                 return;
             }
 
@@ -582,24 +613,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
 
             if (!allowedTypes.includes(file.type)) {
+
                 alert('Please select a JPG, PNG or WEBP image.');
+
                 this.value = '';
+
                 imagePreview.style.display = 'none';
+
                 return;
             }
 
             if (file.size > 5 * 1024 * 1024) {
+
                 alert('Image size must be less than 5 MB.');
+
                 this.value = '';
+
                 imagePreview.style.display = 'none';
+
                 return;
             }
 
             const reader = new FileReader();
 
             reader.onload = function (event) {
+
                 imagePreview.src = event.target.result;
+
                 imagePreview.style.display = 'block';
+
             };
 
             reader.readAsDataURL(file);
