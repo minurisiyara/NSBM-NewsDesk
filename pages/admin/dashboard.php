@@ -1,19 +1,4 @@
-// Additional dashboard analytics
-$totalUsers = (int) $pdo->query(
-    "SELECT COUNT(*) FROM users"
-)->fetchColumn();
-
-$totalComments = (int) $pdo->query(
-    "SELECT COUNT(*) FROM comments"
-)->fetchColumn();
-
-$totalBookmarks = (int) $pdo->query(
-    "SELECT COUNT(*) FROM bookmarks"
-)->fetchColumn();
-
-$totalReports = (int) $pdo->query(
-    "SELECT COUNT(*) FROM content_reports"
-)->fetchColumn();<?php
+<?php
 require_once __DIR__ . '/../../backend/config/session.php';
 require_once __DIR__ . '/../../backend/config/database.php';
 
@@ -62,6 +47,39 @@ try {
     $recentArticles = [];
     $categoriesSummary = [];
 }
+// Additional dashboard analytics
+$totalUsers = (int) $pdo->query(
+    "SELECT COUNT(*) FROM users"
+)->fetchColumn();
+
+$totalComments = (int) $pdo->query(
+    "SELECT COUNT(*) FROM comments"
+)->fetchColumn();
+
+$totalBookmarks = (int) $pdo->query(
+    "SELECT COUNT(*) FROM bookmarks"
+)->fetchColumn();
+
+$totalReports = (int) $pdo->query(
+    "SELECT COUNT(*) FROM content_reports"
+)->fetchColumn();
+$popularCategories = $pdo->query("
+    SELECT c.name, COUNT(a.id) AS article_count
+    FROM categories c
+    LEFT JOIN articles a ON a.category_id = c.id
+    GROUP BY c.id, c.name
+    ORDER BY article_count DESC
+    LIMIT 5
+")->fetchAll(PDO::FETCH_ASSOC);
+
+$mostViewedArticles = $pdo->query("
+    SELECT a.title, COUNT(av.id) AS view_count
+    FROM articles a
+    LEFT JOIN article_views av ON av.article_id = a.id
+    GROUP BY a.id, a.title
+    ORDER BY view_count DESC
+    LIMIT 5
+")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -70,7 +88,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - NSBM NewsDesk</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css?v=2.1">
+    <link rel="stylesheet" href="/NSBM-NewsDesk/assets/css/admin.css?v=2.2">
     
     <!-- Anti-Flicker Script: Prevents sidebar expanding before collapse on tab switch -->
     <script>
@@ -125,12 +143,12 @@ try {
                 <div class="number"><?= htmlspecialchars($activeCategories) ?></div>
             </div>
         </section>
-
-        <!-- Analytics Reserved Area for Tharushika -->
+ 
         <section class="data-card">
             <div class="card-header">
-                <h2>Analytics</h2>
-<div class="analytics-content">
+               <h2>Analytics</h2>
+            </div>
+<div class="analytics-content"></div>
     <h3>Platform Activity Overview</h3>
 
     <p>Total Users: <?= (int)($totalUsers ?? 0) ?></p>
@@ -210,7 +228,55 @@ try {
                     </table>
                 </div>
             </div>
+        </div><div class="dashboard-grid">
+
+    <div class="data-card">
+        <div class="card-header">
+            <h2>Popular Categories</h2>
         </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Articles</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($popularCategories as $category): ?>
+                <tr>
+                    <td><?= htmlspecialchars($category['name']) ?></td>
+                    <td><?= (int)$category['article_count'] ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="data-card">
+        <div class="card-header">
+            <h2>Most Viewed Articles</h2>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Article Title</th>
+                    <th>Views</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($mostViewedArticles as $article): ?>
+                <tr>
+                    <td><?= htmlspecialchars($article['title']) ?></td>
+                    <td><?= (int)$article['view_count'] ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+</div>
     </main>
 
     <script src="../../assets/js/admin.js"></script>
