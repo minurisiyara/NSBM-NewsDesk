@@ -87,9 +87,11 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home | NSBM NewsDesk</title>
-    <link rel="stylesheet" href="../assets/css/home.css">
-    <link rel="stylesheet" href="../assets/css/home-slider.css?v=2">
+        <link rel="stylesheet" href="../assets/css/home.css?v=2">
+    <link rel="stylesheet" href="../assets/css/home-slider.css?v=3">
     <link rel="stylesheet" href="../assets/css/style.css?v=6">
+    <link rel="stylesheet" href="../assets/css/home-responsive.css?v=2">
+    <meta name="theme-color" content="#14532d">
 </head>
 <body>
 
@@ -216,6 +218,6 @@ try {
 </main>
 
 <?php include __DIR__ . '/../components/footer.php'; ?>
-<script src="../assets/js/home-slider.js?v=2"></script>
+<script src="../assets/js/home-slider.js?v=3"></script>
 </body>
 </html>

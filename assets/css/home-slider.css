@@ -1,18 +1,28 @@
-/* Featured news slideshow container */
+/* =====================================
+   FEATURED NEWS SLIDESHOW (responsive)
+   ===================================== */
+
+/* All slides share ONE grid cell, so the box is always as tall as the
+   tallest slide and the page never jumps when slides change.
+   When the announcements column is taller, the slides stretch to fill it. */
 .featured-slideshow {
     position: relative;
-    min-height: 410px;
+    display: grid;
+    min-height: clamp(320px, 50vw, 430px);
     overflow: hidden;
     border-radius: 14px;
     background: #14532d;
     box-shadow: 0 4px 16px rgba(20, 83, 45, 0.08);
+    touch-action: pan-y; /* vertical scroll allowed, JS handles swipe */
 }
 
-/* Individual slide state and smooth zoom transition */
+/* Individual slide */
 .featured-slide {
-    position: absolute;
-    inset: 0;
-    padding: 32px;
+    position: relative;
+    grid-area: 1 / 1;
+    min-height: clamp(320px, 50vw, 430px);
+    padding: clamp(20px, 4vw, 34px);
+    padding-bottom: 56px; /* room for the dots */
     display: flex;
     align-items: flex-end;
     background-position: center;
@@ -25,8 +35,6 @@
 }
 
 .featured-slide.is-active {
-    position: relative;
-    min-height: 410px;
     opacity: 1;
     visibility: visible;
     transform: scale(1);
@@ -51,16 +59,41 @@
     position: relative;
     z-index: 2;
     max-width: 650px;
+    padding: 0; /* slide already has its own padding */
 }
 
-/* Previous and next arrow buttons */
+.featured-slide .category-label {
+    margin-bottom: 12px;
+}
+
+.featured-slide .featured-content h1 {
+    margin-bottom: 10px;
+    font-size: clamp(1.3rem, 4.2vw, 2rem);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.featured-slide .featured-content p {
+    margin-bottom: 16px;
+}
+
+.featured-slide .read-story-btn {
+    min-height: 44px;
+    padding: 12px 18px;
+}
+
+/* Previous / next arrows */
 .slide-nav-btn {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
     z-index: 4;
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border: none;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.92);
@@ -92,20 +125,21 @@
     right: 14px;
 }
 
-/* Bottom right indicator dots */
+/* Indicator dots */
 .slide-dots {
     position: absolute;
-    right: 22px;
-    bottom: 22px;
+    right: 20px;
+    bottom: 18px;
     z-index: 4;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .slide-dot {
-    width: 9px;
-    height: 9px;
+    position: relative;
+    width: 10px;
+    height: 10px;
     padding: 0;
     border: none;
     border-radius: 999px;
@@ -114,23 +148,49 @@
 }
 
 .slide-dot.is-active {
-    width: 24px;
+    width: 26px;
     background: #86efac;
 }
 
+/* bigger invisible touch area for the tiny dots */
+.slide-dot::after {
+    content: "";
+    position: absolute;
+    inset: -14px -5px;
+}
+
+/* Touch screens: no hover, so always show the arrows */
+@media (hover: none) {
+    .slide-nav-btn {
+        opacity: 1;
+    }
+}
+
+/* Phones: swipe + dots only (arrows would cover the text) */
 @media (max-width: 600px) {
-    .featured-slideshow,
-    .featured-slide.is-active {
-        min-height: 350px;
+    .featured-slideshow {
+        border-radius: 12px;
     }
 
-    .featured-slide {
-        padding: 22px;
+    .featured-slide .featured-content h1 {
+        -webkit-line-clamp: 5;
     }
 
     .slide-nav-btn {
-        opacity: 1;
-        width: 34px;
-        height: 34px;
+        display: none;
+    }
+
+    .slide-dots {
+        left: 0;
+        right: 0;
+        bottom: 16px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 380px) {
+    .featured-slide {
+        padding: 18px;
+        padding-bottom: 52px;
     }
 }

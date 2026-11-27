@@ -83,6 +83,9 @@ $articleSummary = trim((string) ($article['summary'] ?? ''));
     <title><?= $article ? htmlspecialchars($article['title'], ENT_QUOTES, 'UTF-8') : 'Article Not Found' ?> | NSBM NewsDesk</title>
     <link rel="stylesheet" href="../assets/css/style.css?v=9">
     <link rel="stylesheet" href="../assets/css/article.css?v=2">
+        <link rel="stylesheet" href="../assets/css/style.css?v=9">
+    <link rel="stylesheet" href="../assets/css/article.css?v=2">
+    <link rel="stylesheet" href="../assets/css/article-page.css?v=1">
 </head>
 <body>
 
