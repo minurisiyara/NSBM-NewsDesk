@@ -139,7 +139,6 @@ function e(string $value): string
 
             <a href="reports.php" class="nav-link">
                 <span>&#9873;</span> Reports
-                <span class="nav-count"><?= $pendingReportsCount ?></span>
             </a>
 
             <a href="activity.php" class="nav-link">
