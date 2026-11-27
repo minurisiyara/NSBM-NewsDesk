@@ -1,6 +1,3 @@
-﻿CREATE DATABASE IF NOT EXISTS nsbm_newsdesk
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE nsbm_newsdesk;
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(100) NOT NULL,
@@ -157,11 +154,6 @@ CREATE TABLE IF NOT EXISTS content_reports (
   KEY idx_content_reports_reviewer (reviewed_by),
   KEY idx_content_reports_article (article_id),
   KEY idx_content_reports_comment (comment_id),
-  CONSTRAINT chk_content_reports_single_target CHECK (
-    (target_type = 'article' AND article_id IS NOT NULL AND comment_id IS NULL)
-    OR
-    (target_type = 'comment' AND comment_id IS NOT NULL AND article_id IS NULL)
-  ),
   CONSTRAINT fk_content_reports_reporter FOREIGN KEY (reporter_id) REFERENCES users(id)
     ON UPDATE CASCADE ON DELETE RESTRICT,
   CONSTRAINT fk_content_reports_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id)

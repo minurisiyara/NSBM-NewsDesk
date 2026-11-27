@@ -61,10 +61,6 @@ $reviewedQuery = $pdo->prepare(
 $reviewedQuery->execute(['user_id' => $userId]);
 $reviewedToday = (int) $reviewedQuery->fetchColumn();
 
-$pendingReportsCount = (int) $pdo->query(
-    "SELECT COUNT(*) FROM content_reports WHERE status = 'pending'"
-)->fetchColumn();
-
 $successMessage = $_GET['success'] ?? '';
 $errorMessage = $_GET['error'] ?? '';
 
@@ -135,7 +131,6 @@ function e(string $value): string
 
             <a href="#submissions" class="nav-link">
                 <span>&#9636;</span> Submissions
-                <span class="nav-count"><?= $pendingCount ?></span>
             </a>
 
             <a href="comments.php" class="nav-link">
