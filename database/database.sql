@@ -1,15 +1,6 @@
-﻿-- ============================================================
--- NSBM NewsDesk - MySQL database schema
--- Compatible with MySQL 8.0.16+ (enforces CHECK constraints)
--- ============================================================
-
-CREATE DATABASE IF NOT EXISTS nsbm_newsdesk
+﻿CREATE DATABASE IF NOT EXISTS nsbm_newsdesk
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE nsbm_newsdesk;
-
--- For a fresh installation, run in an empty database.
--- This script does not drop existing tables or data.
-
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(100) NOT NULL,
@@ -19,8 +10,15 @@ CREATE TABLE IF NOT EXISTS users (
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  admission_no VARCHAR(30) DEFAULT NULL,
+  faculty VARCHAR(100) DEFAULT NULL,
+  degree_program VARCHAR(255) DEFAULT NULL,
+  batch VARCHAR(4) DEFAULT NULL,
+  academic_year VARCHAR(10) DEFAULT NULL,
+  profile_image VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_users_email (email)
+  UNIQUE KEY uq_users_email (email),
+  UNIQUE KEY uq_users_admission_no (admission_no)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -197,10 +195,3 @@ CREATE TABLE IF NOT EXISTS moderation_logs (
   CONSTRAINT fk_moderation_logs_report FOREIGN KEY (report_id) REFERENCES content_reports(id)
     ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Optional initial categories; uncomment if desired.
--- INSERT IGNORE INTO categories (name, description) VALUES
--- ('Academic', 'Academic news and updates'),
--- ('Events', 'Campus events and activities'),
--- ('Sports', 'Sports news and results'),
--- ('General', 'General campus news');
