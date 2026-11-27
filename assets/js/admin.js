@@ -1,4 +1,3 @@
-
 'use strict';
 
 /* =====================================
@@ -69,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    /* News search */
+    /* News search & filters */
     const search = document.getElementById('adminSearchInput');
     const statusFilter = document.getElementById('adminStatusFilter');
     const categoryFilter = document.getElementById('adminCategoryFilter');
@@ -106,30 +105,111 @@ document.addEventListener('DOMContentLoaded', function () {
    NEWS MODAL
 ===================================== */
 
+function getNewsModalEl() {
+    return (
+        document.getElementById('addNewsModal') ||
+        document.getElementById('newsModal') ||
+        document.querySelector('.mod.open') ||
+        document.querySelector('.mod')
+    );
+}
+
+function getNewsFormEl(formOrEvent) {
+    if (formOrEvent && formOrEvent.tagName === 'FORM') {
+        return formOrEvent;
+    }
+    if (formOrEvent && formOrEvent.target && formOrEvent.target.tagName === 'FORM') {
+        return formOrEvent.target;
+    }
+
+    const modal = getNewsModalEl();
+    return (
+        (modal && modal.querySelector('form')) ||
+        document.querySelector('#addNewsModal form') ||
+        document.querySelector('#newsModal form') ||
+        document.querySelector('form[action*="news"]') ||
+        null
+    );
+}
+
+function showValidationMessage(container, message) {
+    const errEl =
+        (container && container.querySelector('.form-error, .error-msg, .err')) ||
+        document.getElementById('newsFormError') ||
+        document.getElementById('me');
+
+    if (errEl) {
+        errEl.textContent = message;
+        errEl.style.display = 'block';
+        errEl.style.color = '#dc2626';
+        errEl.style.marginTop = '8px';
+        errEl.style.fontSize = '13px';
+        errEl.style.fontWeight = '600';
+    } else {
+        alert(message);
+    }
+}
+
+function clearValidationMessage(container) {
+    const errEl =
+        (container && container.querySelector('.form-error, .error-msg, .err')) ||
+        document.getElementById('newsFormError') ||
+        document.getElementById('me');
+
+    if (errEl) {
+        errEl.textContent = '';
+        errEl.style.display = 'none';
+    }
+}
+
 function openAddNewsModal() {
-    const form = document.querySelector('#addNewsModal form');
+    const modal = getNewsModalEl();
+    const form = getNewsFormEl();
 
-    if (form) form.reset();
+    if (form) {
+        form.reset();
+        clearValidationMessage(form);
+    }
 
-    AdminUI.openModal('addNewsModal');
+    if (modal) {
+        AdminUI.openModal(modal.id);
+    } else {
+        AdminUI.openModal('addNewsModal');
+    }
 }
 
 function closeNewsModal() {
-    AdminUI.closeModal('addNewsModal');
+    const modal = getNewsModalEl();
+    if (modal) {
+        AdminUI.closeModal(modal.id);
+    } else {
+        AdminUI.closeModal('addNewsModal');
+    }
 }
 
-function validateNewsForm() {
-    const form = document.querySelector('#addNewsModal form');
+function validateNewsForm(formOrEvent) {
+    const form = getNewsFormEl(formOrEvent);
+    const scope = form || getNewsModalEl() || document;
 
-    if (!form) return false;
+    const titleInput =
+        scope.querySelector('[name="title"]') ||
+        scope.querySelector('#newsTitle') ||
+        scope.querySelector('#title') ||
+        scope.querySelector('input[type="text"]');
 
-    const title = form.querySelector('[name="title"]');
+    if (!titleInput) {
+        return true;
+    }
 
-    if (!title || !title.value.trim()) {
-        alert('Please enter the news title.');
+    const titleValue = String(titleInput.value || '').trim();
+
+    if (!titleValue) {
+        showValidationMessage(scope, 'Please enter the news title.');
+        titleInput.focus();
         return false;
     }
 
+    clearValidationMessage(scope);
     return true;
 }
 
@@ -146,10 +226,13 @@ function closeCategoryModal() {
 }
 
 function validateCategoryForm() {
-    const name = document.getElementById('categoryName');
+    const name =
+        document.getElementById('categoryName') ||
+        document.querySelector('#categoryModal [name="name"]');
 
-    if (!name || !name.value.trim()) {
+    if (!name || !String(name.value || '').trim()) {
         alert('Please enter a category name.');
+        if (name) name.focus();
         return false;
     }
 

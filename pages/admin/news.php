@@ -153,10 +153,7 @@ admin_render_start('news.php', 'News Management');
             <option value="<?= admin_h($c['name']) ?>"><?= admin_h($c['name']) ?></option>
         <?php endforeach; ?>
     </select>
-    <button type="button" class="btn"
-    onclick="openAddNewsModal()">
-    + Add News
-</button>
+    <button type="button" class="btn" onclick="openAddNewsModal()">+ Add News</button>
 </div>
 
 <div class="card tw">
@@ -188,7 +185,7 @@ admin_render_start('news.php', 'News Management');
                     <td><?= admin_h(!empty($art['created_at']) ? date('d M Y', strtotime((string) $art['created_at'])) : '—') ?></td>
                     <td style="white-space:nowrap;display:inline-flex;gap:6px">
                         <?php if ($st !== 'published'): ?>
-                            <form method="POST" onsubmit="return validateNewsForm()">
+                            <form method="POST" style="display:inline">
                                 <input type="hidden" name="action" value="publish">
                                 <input type="hidden" name="id" value="<?= $aid ?>">
                                 <button type="submit" class="btn s">Publish</button>
@@ -213,7 +210,7 @@ admin_render_start('news.php', 'News Management');
 <div class="mod" id="addNewsModal">
     <div class="card">
         <h3 style="font-family:Inter;margin-bottom:8px">Add News Article</h3>
-        <form method="POST">
+        <form method="POST" onsubmit="return validateNewsForm(this)">
             <input type="hidden" name="action" value="create">
             <label>Title</label>
             <input type="text" name="title" class="inp" required>
@@ -238,6 +235,8 @@ admin_render_start('news.php', 'News Management');
                 <option value="published">Published</option>
                 <option value="draft">Draft</option>
             </select>
+
+            <div class="form-error"></div>
 
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
                 <button type="button" class="btn o" onclick="AdminUI.closeModal('addNewsModal')">Cancel</button>
