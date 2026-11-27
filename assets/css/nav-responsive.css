@@ -1,0 +1,164 @@
+/* =====================================================
+   NSBM NEWSDESK - SHARED NAVBAR RESPONSIVE LAYER
+   Linked from components/navbar.php so EVERY page that
+   uses the navbar gets the same mobile menu.
+   ===================================================== */
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+/* Slightly tighter spacing on small laptops so nothing wraps */
+@media (min-width: 1101px) and (max-width: 1280px) {
+    .site-navbar .nav-links {
+        gap: 14px !important;
+    }
+
+    .site-navbar .nav-search-input {
+        width: 160px;
+    }
+}
+
+/* Collapsed (hamburger) navbar */
+@media (max-width: 1100px) {
+    .site-navbar .nav-container {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        min-height: 64px !important;
+        padding: 10px 16px !important;
+        gap: 0 !important;
+    }
+
+    .site-navbar .brand-logo {
+        height: 34px !important;
+    }
+
+    .site-navbar .nav-mobile-toggle {
+        display: flex !important;
+        margin-left: auto;
+        width: 44px;
+        height: 44px;
+    }
+
+    /* hamburger -> X */
+    .site-navbar .nav-mobile-toggle.is-active span:nth-child(1) {
+        transform: translateY(7.5px) rotate(45deg);
+    }
+
+    .site-navbar .nav-mobile-toggle.is-active span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .site-navbar .nav-mobile-toggle.is-active span:nth-child(3) {
+        transform: translateY(-7.5px) rotate(-45deg);
+    }
+
+    /* the dropdown panel */
+    .site-navbar .nav-collapse {
+        display: none !important;
+        grid-template-rows: none !important;
+        flex: 0 0 100% !important;
+        width: 100%;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        gap: 14px !important;
+        margin-top: 10px;
+        padding: 14px 0 6px !important;
+        border-top: 1px solid var(--border);
+        opacity: 1 !important;
+        max-height: calc(100vh - 84px);
+        max-height: calc(100dvh - 84px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .site-navbar .nav-collapse.is-open {
+        display: flex !important;
+        animation: navDrop 0.25s ease-out;
+    }
+
+    .site-navbar .nav-links {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        margin: 0 !important;
+        gap: 4px !important;
+        width: 100%;
+    }
+
+    .site-navbar .nav-links a {
+        display: block !important;
+        width: 100%;
+        padding: 12px 14px !important;
+        border-radius: 8px;
+        font-size: 1rem !important;
+    }
+
+    .site-navbar .nav-links a::after {
+        display: none;
+    }
+
+    .site-navbar .nav-links a:hover,
+    .site-navbar .nav-links a.active {
+        background: var(--green-light) !important;
+        color: var(--green-dark) !important;
+    }
+
+    .site-navbar .nav-search-form {
+        width: 100% !important;
+        height: 46px !important;
+    }
+
+    .site-navbar .nav-search-input {
+        flex: 1;
+        width: 100%;
+        min-width: 0;
+        font-size: 16px !important; /* stops iOS zoom-on-focus */
+    }
+
+    .site-navbar .nav-search-btn {
+        padding: 0 18px !important;
+    }
+
+    .site-navbar .nav-auth-area {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 100%;
+    }
+
+    .site-navbar .nav-login-btn {
+        width: 100%;
+        min-height: 46px;
+    }
+
+    .site-navbar .profile-dropdown-wrapper {
+        width: 100%;
+    }
+
+    .site-navbar .profile-dropdown-menu {
+        position: static;
+        width: 100%;
+        min-width: 0;
+        margin-top: 10px;
+        box-shadow: none;
+    }
+
+    .site-navbar .profile-dropdown-item {
+        padding: 12px 14px;
+    }
+}
+
+@keyframes navDrop {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -27,7 +27,7 @@ $dashboardUrl = $isAdmin
     ? $pagesPath . 'admin/dashboard.php'
     : $pagesPath . 'student/dashboard.php';
 ?>
-
+<link rel="stylesheet" href="<?php echo $basePath; ?>assets/css/nav-responsive.css?v=1">
 <header class="site-navbar">
     <div class="nav-container">
         <!-- Brand Logo -->

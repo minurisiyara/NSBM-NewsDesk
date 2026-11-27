@@ -60,8 +60,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    slider.addEventListener('mouseenter', stopAuto);
-    slider.addEventListener('mouseleave', startAuto);
+    // Pause on hover only for real mouse devices.
+    // On touch screens a tap leaves a "sticky" hover that would stop autoplay forever.
+    if (window.matchMedia('(hover: hover)').matches) {
+        slider.addEventListener('mouseenter', stopAuto);
+        slider.addEventListener('mouseleave', startAuto);
+    }
+
+    // Swipe left / right on touch screens
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    slider.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].clientX;
+        touchStartY = e.changedTouches[0].clientY;
+        stopAuto();
+    }, { passive: true });
+
+    slider.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+
+        // horizontal swipe of at least 40px, and more horizontal than vertical
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+            showSlide(dx < 0 ? current + 1 : current - 1);
+        }
+        startAuto();
+    }, { passive: true });
 
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
